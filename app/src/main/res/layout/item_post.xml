@@ -61,15 +61,32 @@
             android:textColor="#333333"
             android:layout_marginBottom="16dp"/>
 
-        <TextView
-            android:id="@+id/postLikeBtn"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/postContent"
-            android:text="🤍 0"
-            android:textSize="16sp"
-            android:textColor="#555555"
-            android:padding="8dp"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/postLikeBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🤍 0"
+                android:textSize="16sp"
+                android:textColor="#555555"
+                android:padding="8dp"
+                android:layout_marginEnd="24dp"/>
+
+            <TextView
+                android:id="@+id/postCommentBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="💬 Comentar"
+                android:textSize="16sp"
+                android:textColor="#555555"
+                android:padding="8dp"/>
+        </LinearLayout>
 
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

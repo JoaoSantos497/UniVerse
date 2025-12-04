@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="UniVerse"
+            android:text="@string/login_title"
             android:textSize="45sp"
             android:textStyle="bold"
             android:textColor="#6200EE"
@@ -27,7 +27,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bem-vindo de volta, colega!"
+            android:text="@string/login_welcome_text"
             android:textSize="18sp"
             android:textColor="#757575"
             android:layout_marginBottom="48dp"/>
@@ -37,7 +37,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email Institucional"
+            android:hint="@string/login_hint_email"
             app:startIconDrawable="@android:drawable/ic_dialog_email"
             app:errorEnabled="true"
             android:layout_marginBottom="8dp">
@@ -53,7 +53,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="@string/login_hint_password"
             app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
             app:endIconMode="password_toggle"
             app:errorEnabled="true"
@@ -69,7 +69,7 @@
             android:id="@+id/textForgotPass"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Esqueceste-te da password?"
+            android:text="@string/login_forgot_password"
             android:textColor="#6200EE"
             android:layout_gravity="end"
             android:layout_marginBottom="24dp"
@@ -79,7 +79,7 @@
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="Entrar"
+            android:text="@string/login_btn_entrar"
             android:textSize="18sp"
             android:textStyle="bold"
             app:cornerRadius="8dp" />

@@ -1,10 +1,12 @@
 package com.universe;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,7 +25,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
     public PostAdapter(List<Post> postList) {
         this.postList = postList;
-        // Precisamos do ID do utilizador atual para saber se ele já deu like
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
@@ -45,9 +46,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtContent.setText(post.getContent());
         holder.txtDate.setText(post.getDate());
 
-        // --- LÓGICA DO LIKE (Mantém igual) ---
+        // --- 1. LÓGICA DO LIKE ---
         List<String> likes = post.getLikes();
         boolean isLiked = likes.contains(currentUserId);
+
         if (isLiked) {
             holder.txtLike.setText("❤️ " + likes.size());
             holder.txtLike.setTextColor(Color.RED);
@@ -57,30 +59,37 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         }
 
         holder.txtLike.setOnClickListener(v -> {
-            // ... (código do like que já tinhas) ...
             if (post.getPostId() == null) return;
             if (isLiked) {
-                db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayRemove(currentUserId));
+                db.collection("posts").document(post.getPostId())
+                        .update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
-                db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayUnion(currentUserId));
+                db.collection("posts").document(post.getPostId())
+                        .update("likes", FieldValue.arrayUnion(currentUserId));
             }
         });
 
-        // --- LÓGICA DE APAGAR (NOVO) ---
-        // Verifica se o dono do post (post.getUserId()) é igual a quem está logado (currentUserId)
-        if (post.getUserId() != null && post.getUserId().equals(currentUserId)) {
-            // É meu post -> Mostra o lixo
-            holder.btnDelete.setVisibility(View.VISIBLE);
+        // --- 2. LÓGICA DO COMENTÁRIO (NOVO) ---
+        holder.txtComment.setOnClickListener(v -> {
+            // Criar um Intent para abrir a Activity de Comentários
+            Intent intent = new Intent(v.getContext(), CommentsActivity.class);
 
+            // Passar o ID do post para sabermos qual carregar
+            intent.putExtra("postId", post.getPostId());
+
+            // Iniciar a nova janela
+            v.getContext().startActivity(intent);
+        });
+
+        // --- 3. LÓGICA DE APAGAR ---
+        if (post.getUserId() != null && post.getUserId().equals(currentUserId)) {
+            holder.btnDelete.setVisibility(View.VISIBLE);
             holder.btnDelete.setOnClickListener(v -> {
-                // Apagar do Firebase
                 if (post.getPostId() != null) {
                     db.collection("posts").document(post.getPostId()).delete();
-                    // O Listener no HomeFragment vai atualizar a lista automaticamente!
                 }
             });
         } else {
-            // Não é meu post -> Esconde o lixo
             holder.btnDelete.setVisibility(View.GONE);
         }
     }
@@ -91,8 +100,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     }
 
     public static class PostViewHolder extends RecyclerView.ViewHolder {
-        TextView txtUserName, txtContent, txtDate, txtLike;
-        android.widget.ImageButton btnDelete; // <--- NOVO
+        TextView txtUserName, txtContent, txtDate, txtLike, txtComment; // Adicionado txtComment
+        ImageButton btnDelete;
 
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -100,7 +109,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             txtContent = itemView.findViewById(R.id.postContent);
             txtDate = itemView.findViewById(R.id.postDate);
             txtLike = itemView.findViewById(R.id.postLikeBtn);
-            btnDelete = itemView.findViewById(R.id.btnDeletePost); // <--- Ligar ID
+            txtComment = itemView.findViewById(R.id.postCommentBtn); // Ligar ao XML
+            btnDelete = itemView.findViewById(R.id.btnDeletePost);
         }
     }
 }

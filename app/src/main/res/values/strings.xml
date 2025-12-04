@@ -2,4 +2,22 @@
     <string name="app_name">UniVerse</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <!--Create Post -->
+    <string name="create_post">Criar Publicação</string>
+    <string name="box_create_post">O que está a acontecer na tua escola?</string>
+    <string name="publish_post">Publicar</string>
+
+
+    <!-- Login -->
+    <string name="login_title">UniVerse</string>
+    <string name="login_welcome_text">Bem-vindo de volta, colega!</string>
+    <string name="login_hint_email">Email Institucional</string>
+    <string name="login_hint_password">Password</string>
+    <string name="login_forgot_password">Esqueceste-te da password?</string>
+    <string name="login_btn_entrar">Entrar</string>
+
+    <!-- Register -->
+
+
 </resources>
