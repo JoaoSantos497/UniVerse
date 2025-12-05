@@ -77,7 +77,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             }
         });
 
-        // --- 2. LÓGICA DO COMENTÁRIO (NOVO) ---
+        // --- 2. LÓGICA DO COMENTÁRIO  ---
         holder.txtComment.setOnClickListener(v -> {
             // Criar um Intent para abrir a Activity de Comentários
             Intent intent = new Intent(v.getContext(), CommentsActivity.class);

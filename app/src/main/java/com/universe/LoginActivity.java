@@ -73,7 +73,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // (Opcional) Clique no "Esqueci Password"
+        // (Forgot Password
         textForgotPass.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

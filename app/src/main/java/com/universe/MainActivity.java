@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
-        // CONFIGURAÇÃO MODERNA (Sem avisos amarelos)
+        // Bottom Navigation Menu
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();

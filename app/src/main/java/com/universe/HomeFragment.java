@@ -61,13 +61,10 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        // --- MUDANÇA: Chamamos a função aqui em vez de no onResume ---
         carregarPostsEmTempoReal();
 
         return view;
     }
-
-    // Já não precisamos do onResume, o Listener faz o trabalho sozinho!
 
     private void carregarPostsEmTempoReal() {
         db.collection("posts")

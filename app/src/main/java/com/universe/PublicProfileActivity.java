@@ -23,11 +23,10 @@ public class PublicProfileActivity extends AppCompatActivity {
 
     private TextView txtAvatar, txtName, txtCourse, txtUni;
     private Button btnBack;
-
-    // --- NOVAS VARIÁVEIS PARA A LISTA ---
     private RecyclerView recyclerView;
     private PostAdapter postAdapter;
     private List<Post> postList;
+
     // ------------------------------------
 
     private FirebaseFirestore db;
@@ -96,7 +95,7 @@ public class PublicProfileActivity extends AppCompatActivity {
                 });
     }
 
-    // --- NOVA FUNÇÃO: Carrega posts filtrados pelo ID ---
+    // --- Carrega posts filtrados pelo ID ---
     private void carregarPostsDoUtilizador(String uid) {
         db.collection("posts")
                 .whereEqualTo("userId", uid) // FILTRO: Só posts deste user

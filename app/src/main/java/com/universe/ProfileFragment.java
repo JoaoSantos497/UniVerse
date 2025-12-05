@@ -116,7 +116,7 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    // --- NOVA FUNÇÃO: Carrega os TEUS posts ---
+    // Carrega os meus posts
     private void carregarMeusPosts(String uid) {
         db.collection("posts")
                 .whereEqualTo("userId", uid)
@@ -127,7 +127,7 @@ public class ProfileFragment extends Fragment {
                     public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                         postList.clear();
                         if (queryDocumentSnapshots.isEmpty()) {
-                            // Se a lista vier vazia, avisa no Log ou num Toast (opcional)
+                            // Se a lista vier vazia, avisa no Log ou num Toast
                             // Toast.makeText(getContext(), "Nenhum post encontrado.", Toast.LENGTH_SHORT).show();
                         }
                         for (DocumentSnapshot doc : queryDocumentSnapshots) {
@@ -141,7 +141,6 @@ public class ProfileFragment extends Fragment {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        // AQUI É QUE VAMOS VER O ERRO
                         Toast.makeText(getContext(), "Erro: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });

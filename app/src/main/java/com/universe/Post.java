@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Post {
-    private String userId; // <--- NOVO: ID de quem escreveu
+    private String userId;
     private String userName;
     private String content;
     private String date;
@@ -19,7 +19,7 @@ public class Post {
 
     // Construtor atualizado com userId
     public Post(String userId, String userName, String content, String date, long timestamp) {
-        this.userId = userId; // <--- Guardamos o ID
+        this.userId = userId; // Save ID
         this.userName = userName;
         this.content = content;
         this.date = date;
@@ -28,7 +28,7 @@ public class Post {
     }
 
     // Getters
-    public String getUserId() { return userId; } // <--- Novo Getter
+    public String getUserId() { return userId; }
     public String getUserName() { return userName; }
     public String getContent() { return content; }
     public String getDate() { return date; }

@@ -44,7 +44,6 @@ public class RegisterActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance(); // Inicializar Base de Dados
 
         // Ligar variáveis aos IDs do XML
-        // NOTA: Tens de adicionar estes IDs novos ao teu XML (vê abaixo)
         inputNome = findViewById(R.id.textInputLayoutName);
         inputCurso = findViewById(R.id.textInputLayoutCourse);
 

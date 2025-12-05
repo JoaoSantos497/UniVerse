@@ -45,7 +45,6 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         return commentList.size();
     }
 
-    // --- A CORREÇÃO FOI FEITA AQUI ---
     public static class CommentViewHolder extends RecyclerView.ViewHolder {
         // 1. Adicionei a variável 'date'
         TextView userName, content, date;
@@ -55,7 +54,7 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
             userName = itemView.findViewById(R.id.commentUser);
             content = itemView.findViewById(R.id.commentContent);
 
-            // 2. Liguei a variável ao ID do XML (Certifica-te que tens o id commentDate no teu XML)
+            // 2. Liguei a variável ao ID do XML (Certifica que tens o id commentDate no teu XML)
             date = itemView.findViewById(R.id.commentDate);
         }
     }
