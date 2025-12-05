@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new HomeFragment();
             } else if (itemId == R.id.nav_search) {
                 selectedFragment = new SearchFragment();
+
             } else if (itemId == R.id.nav_profile) {
                 selectedFragment = new ProfileFragment();
             }

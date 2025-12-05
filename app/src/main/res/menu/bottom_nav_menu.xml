@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+
     <item
         android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_agenda"
-        android:title="Feed" />
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="@string/navigation_menu_home" />
 
     <item
         android:id="@+id/nav_search"
         android:icon="@android:drawable/ic_menu_search"
-        android:title="Pesquisa" />
+        android:title="@string/navigation_menu_pesquisar" />
 
     <item
         android:id="@+id/nav_profile"
         android:icon="@android:drawable/ic_menu_my_calendar"
-        android:title="Perfil" />
+        android:title="@string/navigation_menu_perfil" />
+
 </menu>

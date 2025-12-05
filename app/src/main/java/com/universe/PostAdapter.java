@@ -46,6 +46,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtContent.setText(post.getContent());
         holder.txtDate.setText(post.getDate());
 
+        long now = System.currentTimeMillis();
+        CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
+                post.getTimestamp(),
+                now,
+                android.text.format.DateUtils.MINUTE_IN_MILLIS);
+
+        holder.txtDate.setText(relativeTime);
+
         // --- 1. LÓGICA DO LIKE ---
         List<String> likes = post.getLikes();
         boolean isLiked = likes.contains(currentUserId);

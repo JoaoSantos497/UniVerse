@@ -1,6 +1,7 @@
 package com.universe;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -19,12 +22,21 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProfileFragment extends Fragment {
 
     // Variáveis da UI
-    private TextView profileEmail, profileName, profileCurso, profileUni;
+    private TextView profileAvatar, profileName, profileCurso, profileUni, profileEmail;
     private Button btnLogout;
+
+    // Variáveis para a Lista de Posts
+    private RecyclerView recyclerView;
+    private PostAdapter postAdapter;
+    private List<Post> postList;
 
     // Variáveis do Firebase
     private FirebaseAuth mAuth;
@@ -33,33 +45,33 @@ public class ProfileFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // 1. Insuflar o layout
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        // 2. Inicializar Firebase (Auth e Firestore)
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-
         FirebaseUser user = mAuth.getCurrentUser();
 
-        // 3. Ligar componentes da UI aos IDs do XML
-        // NOTA: Certifica-te que tens estes IDs no teu XML (vê a nota em baixo)
+        // Ligar componentes
+        profileAvatar = view.findViewById(R.id.profileAvatar); // O novo TextView
+        profileName = view.findViewById(R.id.profileName);
         profileEmail = view.findViewById(R.id.profileEmail);
-        profileName = view.findViewById(R.id.profileName);   // Novo ID
-        profileCurso = view.findViewById(R.id.profileCurso); // Novo ID
-        profileUni = view.findViewById(R.id.profileUni);     // Novo ID
+        profileCurso = view.findViewById(R.id.profileCurso);
+        profileUni = view.findViewById(R.id.profileUni);
         btnLogout = view.findViewById(R.id.btnLogout);
 
-        // 4. Se o utilizador estiver logado, carregar dados
-        if (user != null) {
-            // Mostrar Email (vem do Auth)
-            profileEmail.setText(user.getEmail());
+        // Configurar a Lista de Posts
+        recyclerView = view.findViewById(R.id.recyclerProfilePosts);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        postList = new ArrayList<>();
+        postAdapter = new PostAdapter(postList);
+        recyclerView.setAdapter(postAdapter);
 
-            // Carregar dados extra (vem do Firestore)
-            carregarDadosDoFirestore(user.getUid());
+        if (user != null) {
+            profileEmail.setText(user.getEmail());
+            carregarDadosDoUtilizador(user.getUid());
+            carregarMeusPosts(user.getUid()); // <--- Carrega os posts
         }
 
-        // 5. Lógica do Botão Logout
         btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -73,32 +85,64 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    // Função auxiliar para ler da Base de Dados
-    private void carregarDadosDoFirestore(String uid) {
-        db.collection("users").document(uid)
-                .get()
+    private void carregarDadosDoUtilizador(String uid) {
+        db.collection("users").document(uid).get()
                 .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         if (documentSnapshot.exists()) {
-                            // Converte o documento JSON para a nossa classe Java 'User'
                             User aluno = documentSnapshot.toObject(User.class);
-
                             if (aluno != null) {
-                                // Define os textos na Ecrã
                                 profileName.setText(aluno.getNome());
                                 profileCurso.setText(aluno.getCurso());
                                 profileUni.setText(aluno.getUniversidade());
+
+                                // --- Lógica da Cor do Avatar ---
+                                String nome = aluno.getNome();
+                                if(nome != null && !nome.isEmpty()) {
+                                    String inicial = nome.substring(0, 1).toUpperCase();
+                                    profileAvatar.setText(inicial);
+
+                                    int hash = nome.hashCode();
+                                    profileAvatar.getBackground().setTint(Color.rgb(
+                                            Math.abs(hash * 25) % 255,
+                                            Math.abs(hash * 80) % 255,
+                                            Math.abs(hash * 13) % 255
+                                    ));
+                                }
                             }
-                        } else {
-                            Toast.makeText(getContext(), "Perfil não encontrado na base de dados.", Toast.LENGTH_SHORT).show();
                         }
+                    }
+                });
+    }
+
+    // --- NOVA FUNÇÃO: Carrega os TEUS posts ---
+    private void carregarMeusPosts(String uid) {
+        db.collection("posts")
+                .whereEqualTo("userId", uid)
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        postList.clear();
+                        if (queryDocumentSnapshots.isEmpty()) {
+                            // Se a lista vier vazia, avisa no Log ou num Toast (opcional)
+                            // Toast.makeText(getContext(), "Nenhum post encontrado.", Toast.LENGTH_SHORT).show();
+                        }
+                        for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                            Post post = doc.toObject(Post.class);
+                            post.setPostId(doc.getId());
+                            postList.add(post);
+                        }
+                        postAdapter.notifyDataSetChanged();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(getContext(), "Erro ao carregar perfil: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        // AQUI É QUE VAMOS VER O ERRO
+                        Toast.makeText(getContext(), "Erro: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
     }

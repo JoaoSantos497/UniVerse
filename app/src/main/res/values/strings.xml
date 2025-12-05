@@ -17,7 +17,16 @@
     <string name="login_forgot_password">Esqueceste-te da password?</string>
     <string name="login_btn_entrar">Entrar</string>
 
+
     <!-- Register -->
 
+    !-- Comment -->
+    <string name="comment_nome">Nome</string>
+    <string name="comment_date">10 min</string>
+    <string name="comment_content">Conteúdo...</string>
+    <string name="navigation_menu_home">Home</string>
+    <string name="navigation_menu_pesquisar">Pesquisar</string>
+    <string name="navigation_menu_perfil">Perfil</string>
+    <string name="search_bar_hint">Pesquisar utilizadores...</string>
 
 </resources>

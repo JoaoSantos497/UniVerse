@@ -28,6 +28,16 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         Comment comment = commentList.get(position);
         holder.userName.setText(comment.getUserName());
         holder.content.setText(comment.getContent());
+
+        // Calcular o tempo
+        long now = System.currentTimeMillis();
+        CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
+                comment.getTimestamp(),
+                now,
+                android.text.format.DateUtils.MINUTE_IN_MILLIS);
+
+        // Agora isto já não vai dar erro
+        holder.date.setText(relativeTime);
     }
 
     @Override
@@ -35,13 +45,18 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         return commentList.size();
     }
 
+    // --- A CORREÇÃO FOI FEITA AQUI ---
     public static class CommentViewHolder extends RecyclerView.ViewHolder {
-        TextView userName, content;
+        // 1. Adicionei a variável 'date'
+        TextView userName, content, date;
 
         public CommentViewHolder(@NonNull View itemView) {
             super(itemView);
             userName = itemView.findViewById(R.id.commentUser);
             content = itemView.findViewById(R.id.commentContent);
+
+            // 2. Liguei a variável ao ID do XML (Certifica-te que tens o id commentDate no teu XML)
+            date = itemView.findViewById(R.id.commentDate);
         }
     }
 }
