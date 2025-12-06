@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingTop="5dp"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
     <FrameLayout
@@ -22,6 +22,7 @@
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="#6200EE"
         app:itemTextColor="#6200EE"
-        app:elevation="8dp" />
+        app:labelVisibilityMode="labeled"
+        app:elevation="16dp" />
 
 </RelativeLayout>

@@ -27,7 +27,7 @@ public class EditProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
 
-    // Dados atuais (para comparação)
+    // Variáveis para controlo
     private String usernameAtual;
     private long ultimaTrocaTimestamp = 0;
 
@@ -39,43 +39,63 @@ public class EditProfileActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
+        // Ligar componentes
         editName = findViewById(R.id.editName);
         editUsername = findViewById(R.id.editUsername);
         editCourse = findViewById(R.id.editCourse);
         editUni = findViewById(R.id.editUni);
         btnSave = findViewById(R.id.btnSaveProfile);
 
-        // Carregar dados frescos da BD (melhor que vir do Intent para termos o timestamp certo)
+        // 1. CARREGAR DADOS (A tua funcionalidade pedida!)
+        // Chamamos esta função assim que o ecrã abre
         carregarDadosAtuais();
 
-        btnSave.setOnClickListener(v -> guardarAlteracoes());
+        btnSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                guardarAlteracoes();
+            }
+        });
     }
 
     private void carregarDadosAtuais() {
         String uid = mAuth.getCurrentUser().getUid();
-        db.collection("users").document(uid).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
-                        if (user != null) {
-                            editName.setText(user.getNome());
-                            editCourse.setText(user.getCurso());
-                            editUni.setText(user.getUniversidade());
 
-                            // Guardamos o username atual e o tempo para comparar depois
-                            editUsername.setText(user.getUsername());
-                            usernameAtual = user.getUsername();
-                            ultimaTrocaTimestamp = user.getUltimaTrocaUsername();
+        // Bloqueamos o botão enquanto carrega para evitar erros
+        btnSave.setEnabled(false);
+        btnSave.setText("A carregar...");
+
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                        if (documentSnapshot.exists()) {
+                            User user = documentSnapshot.toObject(User.class);
+                            if (user != null) {
+                                // --- AQUI PREENCHEMOS AS CAIXAS ---
+                                editName.setText(user.getNome());
+                                editUsername.setText(user.getUsername());
+                                editCourse.setText(user.getCurso());
+                                editUni.setText(user.getUniversidade());
+
+                                // Guardamos o estado atual para comparar depois
+                                usernameAtual = user.getUsername();
+                                ultimaTrocaTimestamp = user.getUltimaTrocaUsername();
+
+                                // Dados carregados? Botão pronto!
+                                btnSave.setEnabled(true);
+                                btnSave.setText("Guardar Alterações");
+                            }
                         }
                     }
                 });
     }
 
     private void guardarAlteracoes() {
-        String novoNome = editName.getText().toString().trim();
-        String novoUsername = editUsername.getText().toString().trim().replace(" ", "").toLowerCase();
-        String novoCurso = editCourse.getText().toString().trim();
-        String novaUni = editUni.getText().toString().trim();
+        final String novoNome = editName.getText().toString().trim();
+        final String novoUsername = editUsername.getText().toString().trim().replace(" ", "").toLowerCase();
+        final String novoCurso = editCourse.getText().toString().trim();
+        final String novaUni = editUni.getText().toString().trim();
 
         if (TextUtils.isEmpty(novoNome) || TextUtils.isEmpty(novoUsername) || TextUtils.isEmpty(novoCurso)) {
             Toast.makeText(this, "Preenche todos os campos", Toast.LENGTH_SHORT).show();
@@ -85,45 +105,47 @@ public class EditProfileActivity extends AppCompatActivity {
         btnSave.setEnabled(false);
         btnSave.setText("A verificar...");
 
-        // Se o username NÃO mudou, gravamos direto
+        // LÓGICA DE DECISÃO:
+
+        // 1. Se o username é IGUAL ao antigo -> Não mudou, grava direto (ignora restrições)
         if (novoUsername.equals(usernameAtual)) {
-            atualizarDadosNaBase(novoNome, novoUsername, novoCurso, novaUni, 0); // 0 significa que não atualizamos o tempo
+            atualizarBaseDeDados(novoNome, novoUsername, novoCurso, novaUni, 0);
         }
         else {
-            // Se mudou, temos de verificar DUAS coisas:
-            // 1. A regra dos 7 dias
+            // 2. O username MUDOU -> Temos de verificar 2 coisas:
+
+            // A. Regra dos 7 Dias
             long agora = System.currentTimeMillis();
             long diferenca = agora - ultimaTrocaTimestamp;
             long seteDiasEmMs = TimeUnit.DAYS.toMillis(7);
 
             if (ultimaTrocaTimestamp != 0 && diferenca < seteDiasEmMs) {
                 long diasRestantes = TimeUnit.MILLISECONDS.toDays(seteDiasEmMs - diferenca);
-                editUsername.setError("Espera " + (diasRestantes + 1) + " dias para mudar de novo.");
+                editUsername.setError("Tens de esperar " + (diasRestantes + 1) + " dias para mudar.");
                 btnSave.setEnabled(true);
                 btnSave.setText("Guardar Alterações");
                 return;
             }
 
-            // 2. Se o username já existe (Verificação de Unicidade)
+            // B. Unicidade (Será que já existe?)
             db.collection("users")
                     .whereEqualTo("username", novoUsername)
                     .get()
                     .addOnSuccessListener(querySnapshot -> {
                         if (!querySnapshot.isEmpty()) {
-                            // Já existe!
-                            editUsername.setError("Este username já existe.");
+                            // JÁ EXISTE! Erro.
+                            editUsername.setError("Este username já está ocupado.");
                             btnSave.setEnabled(true);
                             btnSave.setText("Guardar Alterações");
                         } else {
-                            // Está livre! Gravar e atualizar timestamp
-                            atualizarDadosNaBase(novoNome, novoUsername, novoCurso, novaUni, agora);
+                            // ESTÁ LIVRE! Gravar e atualizar data de troca.
+                            atualizarBaseDeDados(novoNome, novoUsername, novoCurso, novaUni, agora);
                         }
                     });
         }
     }
 
-    // Função auxiliar para não repetir código
-    private void atualizarDadosNaBase(String nome, String username, String curso, String uni, long timestampTroca) {
+    private void atualizarBaseDeDados(String nome, String username, String curso, String uni, long timestamp) {
         String uid = mAuth.getCurrentUser().getUid();
         Map<String, Object> updates = new HashMap<>();
         updates.put("nome", nome);
@@ -131,9 +153,8 @@ public class EditProfileActivity extends AppCompatActivity {
         updates.put("curso", curso);
         updates.put("universidade", uni);
 
-        // Só atualiza a data se tiver havido troca (timestamp > 0)
-        if (timestampTroca > 0) {
-            updates.put("ultimaTrocaUsername", timestampTroca);
+        if (timestamp > 0) {
+            updates.put("ultimaTrocaUsername", timestamp);
         }
 
         db.collection("users").document(uid).update(updates)

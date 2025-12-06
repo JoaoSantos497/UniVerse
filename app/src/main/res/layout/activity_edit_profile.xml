@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
+
     android:gravity="center_horizontal"
     android:background="#FFFFFF">
 
@@ -15,6 +16,7 @@
         android:text="Editar Perfil"
         android:textSize="24sp"
         android:textStyle="bold"
+        android:paddingTop="25dp"
         android:layout_marginBottom="32dp"/>
 
     <com.google.android.material.textfield.TextInputLayout

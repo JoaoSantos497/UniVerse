@@ -154,7 +154,7 @@ public class RegisterActivity extends AppCompatActivity {
                             guardarDadosNaBaseDeDados(firebaseUser);
                         } else {
                             progressBar.setVisibility(View.GONE);
-                            // --- AQUI APANHAMOS O ERRO DE EMAIL DUPLICADO ---
+
                             try {
                                 throw task.getException();
                             } catch (com.google.firebase.auth.FirebaseAuthUserCollisionException e) {
