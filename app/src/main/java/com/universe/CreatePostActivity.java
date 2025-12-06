@@ -59,13 +59,11 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // Desativar botão para evitar cliques duplos
         btnPublish.setEnabled(false);
         btnPublish.setText("A publicar...");
 
         String uid = mAuth.getCurrentUser().getUid();
 
-        // 1. Buscar o nome do utilizador à base de dados
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
@@ -73,18 +71,16 @@ public class CreatePostActivity extends AppCompatActivity {
                         if (documentSnapshot.exists()) {
                             User user = documentSnapshot.toObject(User.class);
 
-                            // 2. Preparar os dados do Post
-                            // Data para mostrar (Texto)
                             String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                            // Timestamp para ordenar (Número)
                             long timestamp = System.currentTimeMillis();
-                            // 3. Criar o objeto Post (com os 4 argumentos)
+
+
                             Post novoPost = new Post(uid, user.getNome(), content, dataHora, timestamp);
-                            // 4. Guardar
+                            // ----------------------------
+
                             guardarNoFirestore(novoPost);
                         }
                     }
-
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
@@ -102,7 +98,7 @@ public class CreatePostActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
                         Toast.makeText(CreatePostActivity.this, "Publicado com sucesso!", Toast.LENGTH_SHORT).show();
-                        finish(); // Fecha a janela e volta ao Feed
+                        finish();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {

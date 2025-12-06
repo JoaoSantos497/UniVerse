@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton; // <--- FALTAVA ESTE IMPORT
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,6 +22,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
 
     private TextInputEditText inputCurrent, inputNew, inputConfirm;
     private Button btnSave;
+    private ImageButton btnBack; // <--- FALTAVA ESTA DECLARAÇÃO
     private FirebaseUser user;
 
     @Override
@@ -33,9 +35,14 @@ public class ChangePasswordActivity extends AppCompatActivity {
         inputConfirm = findViewById(R.id.inputConfirmNewPass);
         btnSave = findViewById(R.id.btnSavePassword);
 
+        // CORRIGIDO AQUI: Tinhas escrito "btnBac", mudei para "btnBack"
+        btnBack = findViewById(R.id.btnBackChangePass);
+
         user = FirebaseAuth.getInstance().getCurrentUser();
 
         btnSave.setOnClickListener(v -> tentarAlterarPassword());
+
+        btnBack.setOnClickListener(v -> finish());
     }
 
     private void tentarAlterarPassword() {
@@ -61,22 +68,18 @@ public class ChangePasswordActivity extends AppCompatActivity {
         btnSave.setText("A verificar...");
 
         // 2. REAUTENTICAÇÃO (O Passo de Segurança)
-        // Criamos uma credencial com o email atual e a password ANTIGA que o user escreveu
         AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPass);
 
         user.reauthenticate(credential)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
-                        // Se chegou aqui, a password antiga está CERTA!
-                        // Agora podemos mudar para a nova.
                         atualizarParaNova(newPass);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        // A password antiga está ERRADA
                         btnSave.setEnabled(true);
                         btnSave.setText("Atualizar Password");
                         inputCurrent.setError("Password incorreta");
