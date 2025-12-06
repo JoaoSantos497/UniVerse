@@ -24,7 +24,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private TextInputLayout inputEmail, inputPassword;
     private Button btnLogin;
-    private TextView textGoToRegister, textForgotPass;
+    private TextView textGoToRegister, tvForgot; // Usei tvForgot para ser consistente
     private ProgressBar progressBar;
     private FirebaseAuth mAuth;
 
@@ -36,26 +36,26 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
 
         // --- VERIFICAÇÃO AUTOMÁTICA DE SESSÃO ---
-        // Se o utilizador já estiver logado, não precisa de fazer login outra vez.
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if(currentUser != null){
             goToMain();
         }
 
-        // Ligar UI
+        // Ligar UI aos IDs do XML
         inputEmail = findViewById(R.id.loginInputEmail);
         inputPassword = findViewById(R.id.loginInputPassword);
         btnLogin = findViewById(R.id.btnLogin);
-        textGoToRegister = findViewById(R.id.textGoToRegister);
-        textForgotPass = findViewById(R.id.textForgotPass);
         progressBar = findViewById(R.id.loginProgressBar);
 
-        // Texto sublinhado
-        TextView textGoToRegister = findViewById(R.id.textGoToRegister);
-        TextView textForgotPass = findViewById(R.id.textForgotPass);
+        textGoToRegister = findViewById(R.id.textGoToRegister);
+        tvForgot = findViewById(R.id.tvForgotPassword);
 
+        // Sublinhar os textos (Efeito visual de link)
         textGoToRegister.setPaintFlags(textGoToRegister.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
-        textForgotPass.setPaintFlags(textForgotPass.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        // Verificação de segurança: só sublinha se o botão existir
+        if (tvForgot != null) {
+            tvForgot.setPaintFlags(tvForgot.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        }
 
         // Clique para ir para o Registo
         textGoToRegister.setOnClickListener(new View.OnClickListener() {
@@ -73,17 +73,20 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        // (Forgot Password
-        textForgotPass.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(LoginActivity.this, "Implementar lógica de recuperar password", Toast.LENGTH_SHORT).show();
-                // Dica: mAuth.sendPasswordResetEmail(email)...
-            }
-        });
+        // Clique para recuperar password (O código novo!)
+        if (tvForgot != null) {
+            tvForgot.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
     }
 
     private void fazerLogin() {
+        // (Este método mantém-se igual ao que tinhas, está correto)
         String email = inputEmail.getEditText().getText().toString().trim();
         String password = inputPassword.getEditText().getText().toString().trim();
 
@@ -96,24 +99,19 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Limpar erros e mostrar loading
         inputEmail.setError(null);
         inputPassword.setError(null);
         progressBar.setVisibility(View.VISIBLE);
 
-        // Autenticar no Firebase
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         progressBar.setVisibility(View.GONE);
-
                         if (task.isSuccessful()) {
-                            // Login com sucesso
                             goToMain();
                         } else {
-                            // Falha no login
-                            Toast.makeText(LoginActivity.this, "Falha ao entrar. Verifica o email e password.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(LoginActivity.this, "Falha ao entrar. Verifica dados.", Toast.LENGTH_LONG).show();
                         }
                     }
                 });
@@ -121,7 +119,6 @@ public class LoginActivity extends AppCompatActivity {
 
     private void goToMain() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-        // Estas flags limpam o histórico para que, se o utilizador clicar "Voltar" na Home, não volte ao Login
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
