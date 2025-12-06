@@ -1,25 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:background="#FFFFFF"
-    tools:context=".RegisterActivity">
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center"
+        android:gravity="center_horizontal"
         android:padding="32dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="UniVerse"
-            android:textSize="40sp"
+            android:text="Criar Conta"
+            android:textSize="32sp"
             android:textStyle="bold"
             android:textColor="#6200EE"
             android:layout_marginBottom="8dp"/>
@@ -27,20 +26,16 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Cria a tua conta académica"
-            android:textSize="16sp"
+            android:text="Junta-te à comunidade UniVerse"
             android:textColor="#757575"
-            android:layout_marginBottom="40dp"/>
+            android:layout_marginBottom="32dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputLayoutName"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nome Completo"
-            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-            android:layout_marginBottom="8dp">
-
+            android:layout_marginBottom="16dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -51,10 +46,8 @@
             android:id="@+id/inputUsername"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Username (ex: joaosantos)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:hint="Username (único)"
             android:layout_marginBottom="16dp">
-
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -63,29 +56,22 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputLayoutCourse"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="O teu Curso"
-            app:startIconDrawable="@android:drawable/ic_menu_agenda"
-            android:layout_marginBottom="8dp">
-
+            android:hint="Curso"
+            android:layout_marginBottom="16dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="textCapWords" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputLayoutEmail"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Email Institucional"
-            app:startIconDrawable="@android:drawable/ic_dialog_email"
-            app:errorEnabled="true"
-            android:layout_marginBottom="8dp">
-
+            android:layout_marginBottom="16dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -94,15 +80,11 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputLayoutPassword"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Password"
-            app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
             app:endIconMode="password_toggle"
-            app:errorEnabled="true"
-            android:layout_marginBottom="8dp">
-
+            android:layout_marginBottom="16dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -111,15 +93,11 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/textInputLayoutConfirmPassword"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Confirmar Password"
-            app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
             app:endIconMode="password_toggle"
-            app:errorEnabled="true"
-            android:layout_marginBottom="24dp">
-
+            android:layout_marginBottom="32dp">
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -129,11 +107,12 @@
         <Button
             android:id="@+id/buttonRegistar"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="Registar"
-            android:textSize="18sp"
+            android:layout_height="55dp"
+            android:text="CRIAR CONTA"
+            android:backgroundTint="#6200EE"
+            android:textColor="#FFFFFF"
             android:textStyle="bold"
-            app:cornerRadius="8dp" />
+            app:cornerRadius="8dp"/>
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -142,15 +121,26 @@
             android:visibility="gone"
             android:layout_marginTop="16dp"/>
 
-        <TextView
-            android:id="@+id/textViewLoginLink"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Já tens conta? Entra aqui."
-            android:textColor="#6200EE"
-            android:textStyle="bold"
-            android:padding="16dp"
-            android:layout_marginTop="16dp"/>
+            android:orientation="horizontal"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Já tens conta? "
+                android:textColor="#757575"/>
+            <TextView
+                android:id="@+id/textViewLoginLink"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Entra aqui"
+                android:textColor="#6200EE"
+                android:textStyle="bold"
+                android:padding="4dp"/>
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

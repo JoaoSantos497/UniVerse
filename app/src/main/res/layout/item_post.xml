@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
+    app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
     android:backgroundTint="#FFFFFF">
 
@@ -29,26 +29,45 @@
             android:id="@+id/headerLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             android:layout_toStartOf="@id/btnDeletePost"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="12dp"
+            android:gravity="center_vertical">
 
             <TextView
-                android:id="@+id/postUserName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nome do Aluno"
+                android:id="@+id/postProfileImage"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/circle_bg"
+                android:gravity="center"
+                android:text="A"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
                 android:textStyle="bold"
-                android:textSize="16sp"
-                android:textColor="#000000"/>
+                android:layout_marginEnd="12dp"/>
 
-            <TextView
-                android:id="@+id/postDate"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="10 min"
-                android:textSize="12sp"
-                android:textColor="#757575"/>
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/postUserName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nome do Aluno"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="#000000"/>
+
+                <TextView
+                    android:id="@+id/postDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10 min"
+                    android:textSize="12sp"
+                    android:textColor="#757575"/>
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
@@ -57,8 +76,9 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/headerLayout"
             android:text="Texto do post..."
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:textColor="#333333"
+            android:lineSpacingExtra="4dp"
             android:layout_marginBottom="16dp"/>
 
         <LinearLayout
@@ -73,9 +93,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🤍 0"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="#555555"
                 android:padding="8dp"
+                android:background="?attr/selectableItemBackground"
                 android:layout_marginEnd="24dp"/>
 
             <TextView
@@ -83,9 +104,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="💬 Comentar"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textColor="#555555"
-                android:padding="8dp"/>
+                android:padding="8dp"
+                android:background="?attr/selectableItemBackground"/>
         </LinearLayout>
 
     </RelativeLayout>

@@ -10,15 +10,14 @@
         android:id="@+id/search_bar"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:autofillHints=""
         android:background="#F0F0F0"
-        android:hint="@string/search_bar_hint"
+        android:hint="Pesquisar (Nome ou @user)..."
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:drawableStart="@android:drawable/ic_menu_search"
         android:drawablePadding="10dp"
         android:inputType="textPersonName"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp"/>
 
     <androidx.recyclerview.widget.RecyclerView

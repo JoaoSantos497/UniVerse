@@ -22,7 +22,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
 
     private TextInputEditText inputCurrent, inputNew, inputConfirm;
     private Button btnSave;
-    private ImageButton btnBack; // <--- FALTAVA ESTA DECLARAÇÃO
+    private ImageButton btnBack;
     private FirebaseUser user;
 
     @Override
@@ -35,7 +35,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         inputConfirm = findViewById(R.id.inputConfirmNewPass);
         btnSave = findViewById(R.id.btnSavePassword);
 
-        // CORRIGIDO AQUI: Tinhas escrito "btnBac", mudei para "btnBack"
+
         btnBack = findViewById(R.id.btnBackChangePass);
 
         user = FirebaseAuth.getInstance().getCurrentUser();

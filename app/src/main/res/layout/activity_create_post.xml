@@ -4,13 +4,13 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="#FFFFFF">
+    android:background="#FFFFFF"
+    android:fitsSystemWindows="true">
 
     <TextView
-        android:paddingTop="30dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/create_post"
+        android:text="Criar Publicação"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"
@@ -22,7 +22,7 @@
         android:layout_height="200dp"
         android:background="#F5F5F5"
         android:padding="16dp"
-        android:hint="@string/box_create_post"
+        android:hint="O que queres partilhar hoje?"
         android:gravity="top|start"
         android:inputType="textMultiLine"
         android:layout_marginBottom="24dp"/>
@@ -31,7 +31,7 @@
         android:id="@+id/btnPublish"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/publish_post"
+        android:text="Publicar"
         android:backgroundTint="#6200EE"
         android:textColor="#FFFFFF"
         android:padding="12dp"/>
