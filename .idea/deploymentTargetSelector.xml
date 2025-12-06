@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="UniVerse">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-12-04T15:48:28.421985200Z">
+        <DropdownSelection timestamp="2025-12-06T03:15:25.345980500Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=3d361f68" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\joaos\.android\avd\Medium_Phone.avd" />
             </handle>
           </Target>
         </DropdownSelection>
