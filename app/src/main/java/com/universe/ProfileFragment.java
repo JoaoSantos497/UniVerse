@@ -35,6 +35,7 @@ public class ProfileFragment extends Fragment {
     private TextView profileAvatar, profileName, profileCurso, profileUni, profileEmail, profileUsername;
     private TextView txtMyFollowers, txtMyFollowing;
     private Button btnLogout, btnEditProfile;
+    private Button btnChangePassword;
 
     // Variáveis para a Lista de Posts
     private RecyclerView recyclerView;
@@ -61,11 +62,13 @@ public class ProfileFragment extends Fragment {
         profileCurso = view.findViewById(R.id.profileCurso);
         profileUni = view.findViewById(R.id.profileUni);
 
+
         txtMyFollowers = view.findViewById(R.id.txtMyFollowers);
         txtMyFollowing = view.findViewById(R.id.txtMyFollowing);
 
         btnLogout = view.findViewById(R.id.btnLogout);
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
+        btnChangePassword = view.findViewById(R.id.btnChangePassword);
 
         // Configurar a Lista de Posts
         recyclerView = view.findViewById(R.id.recyclerProfilePosts);
@@ -77,6 +80,12 @@ public class ProfileFragment extends Fragment {
         // Ação do Botão Editar
         btnEditProfile.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), EditProfileActivity.class);
+            startActivity(intent);
+        });
+
+        // Ação do Botão Change Password
+        btnChangePassword.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), ChangePasswordActivity.class);
             startActivity(intent);
         });
 
