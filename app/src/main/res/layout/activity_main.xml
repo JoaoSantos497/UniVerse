@@ -20,9 +20,11 @@
         android:layout_alignParentBottom="true"
         android:background="#FFFFFF"
         app:menu="@menu/bottom_nav_menu"
-        app:itemIconTint="#6200EE"
-        app:itemTextColor="#6200EE"
-        app:labelVisibilityMode="labeled"
-        app:elevation="16dp" />
+        app:itemIconTint="@color/nav_item_selector"
+        app:itemTextColor="@color/nav_item_selector"
+        app:itemRippleColor="#206200EE"
+        app:itemIconSize="24dp"
+        app:elevation="8dp"
+        app:labelVisibilityMode="labeled" />
 
 </RelativeLayout>
