@@ -82,14 +82,15 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void criarConta() {
-        inputNome.setError(null); // Limpa erro do Nome
-        inputUsername.setError(null);// Limpa erro do Username
-        inputCurso.setError(null);   // Limpa erro do Curso
-        inputEmail.setError(null);   // Limpa erro do Email
-        inputPassword.setError(null); // Limpa erro da Password
+        // 1. Limpeza Inicial
+        inputNome.setError(null);
+        inputUsername.setError(null);
+        inputCurso.setError(null);
+        inputEmail.setError(null);
+        inputPassword.setError(null);
         inputConfirmPassword.setError(null);
 
-        // 1. Obter os textos escritos
+        // 2. Obter textos
         final String nome = inputNome.getEditText().getText().toString().trim();
         final String username = inputUsername.getEditText().getText().toString().trim().replace(" ", "").toLowerCase();
         final String curso = inputCurso.getEditText().getText().toString().trim();
@@ -97,7 +98,7 @@ public class RegisterActivity extends AppCompatActivity {
         String password = inputPassword.getEditText().getText().toString().trim();
         String confirmPassword = inputConfirmPassword.getEditText().getText().toString().trim();
 
-        // 2. Validações de Segurança
+        // 3. Validações Básicas
         if (TextUtils.isEmpty(nome)) {
             inputNome.setError("Introduz o teu nome");
             return;
@@ -106,48 +107,62 @@ public class RegisterActivity extends AppCompatActivity {
             inputUsername.setError("Define um username");
             return;
         }
-        if (TextUtils.isEmpty(curso)) {
-            inputCurso.setError("Introduz o teu curso");
-            return;
-        }
-        if (TextUtils.isEmpty(email)) {
-            inputEmail.setError("O email é obrigatório");
-            return;
-        }
-        // Validação do Email Institucional
-        // Verificamos se termina em "ipsantarem.pt" para aceitar TODAS as escolas (esg, eses, esa, ess, esdrm)
         if (!email.endsWith("ipsantarem.pt")) {
-            inputEmail.setError("Acesso restrito: Usa o teu email do IPSantarém!");
-            inputEmail.requestFocus();
+            inputEmail.setError("Usa o email do IPSantarém!");
             return;
         }
         if (password.length() < 6) {
-            inputPassword.setError("A password deve ter pelo menos 6 caracteres");
+            inputPassword.setError("Mínimo 6 caracteres");
             return;
         }
         if (!password.equals(confirmPassword)) {
-            inputConfirmPassword.setError("As passwords não coincidem");
+            inputConfirmPassword.setError("Passwords não coincidem");
             return;
         }
 
-        // Limpar erros e mostrar loading
-        inputEmail.setError(null);
-        inputPassword.setError(null);
         progressBar.setVisibility(View.VISIBLE);
 
-        // 3. Criar utilizador no Firebase Auth
+        // --- 4. VERIFICAÇÃO DE USERNAME (O "Semáforo") ---
+        // Antes de criar conta, vamos ver se o username existe na BD
+        db.collection("users")
+                .whereEqualTo("username", username)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        // JÁ EXISTE! Paramos tudo.
+                        progressBar.setVisibility(View.GONE);
+                        inputUsername.setError("Este username já está a ser usado. Escolhe outro.");
+                    } else {
+                        // ESTÁ LIVRE! Podemos avançar para criar a conta.
+                        prosseguirCriacaoConta(email, password);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(RegisterActivity.this, "Erro ao verificar username.", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    // Separei a criação da conta para ficar mais organizado
+    private void prosseguirCriacaoConta(String email, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            // A conta foi criada, AGORA guardamos os dados na BD
                             FirebaseUser firebaseUser = mAuth.getCurrentUser();
                             guardarDadosNaBaseDeDados(firebaseUser);
-
                         } else {
                             progressBar.setVisibility(View.GONE);
-                            Toast.makeText(RegisterActivity.this, "Erro: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                            // --- AQUI APANHAMOS O ERRO DE EMAIL DUPLICADO ---
+                            try {
+                                throw task.getException();
+                            } catch (com.google.firebase.auth.FirebaseAuthUserCollisionException e) {
+                                inputEmail.setError("Este email já está registado!");
+                                inputEmail.requestFocus();
+                            } catch (Exception e) {
+                                Toast.makeText(RegisterActivity.this, "Erro: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            }
                         }
                     }
                 });
