@@ -26,7 +26,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class RegisterActivity extends AppCompatActivity {
 
     // Variáveis da UI
-    private TextInputLayout inputNome, inputCurso, inputEmail, inputPassword, inputConfirmPassword;
+    private TextInputLayout inputEmail, inputPassword, inputConfirmPassword, inputNome, inputCurso, inputUsername;
     private Button btnRegistar;
     private ProgressBar progressBar;
 
@@ -45,6 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         // Ligar variáveis aos IDs do XML
         inputNome = findViewById(R.id.textInputLayoutName);
+        inputUsername = findViewById(R.id.inputUsername);
         inputCurso = findViewById(R.id.textInputLayoutCourse);
 
         inputEmail = findViewById(R.id.textInputLayoutEmail);
@@ -81,7 +82,8 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void criarConta() {
-        inputNome.setError(null);    // Limpa erro do Nome
+        inputNome.setError(null); // Limpa erro do Nome
+        inputUsername.setError(null);// Limpa erro do Username
         inputCurso.setError(null);   // Limpa erro do Curso
         inputEmail.setError(null);   // Limpa erro do Email
         inputPassword.setError(null); // Limpa erro da Password
@@ -91,6 +93,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         // 1. Obter os textos escritos
         final String nome = inputNome.getEditText().getText().toString().trim();
+        final String username = inputUsername.getEditText().getText().toString().trim().replace(" ", "").toLowerCase();
         final String curso = inputCurso.getEditText().getText().toString().trim();
         final String email = inputEmail.getEditText().getText().toString().trim();
         String password = inputPassword.getEditText().getText().toString().trim();
@@ -99,6 +102,10 @@ public class RegisterActivity extends AppCompatActivity {
         // 2. Validações de Segurança
         if (TextUtils.isEmpty(nome)) {
             inputNome.setError("Introduz o teu nome");
+            return;
+        }
+        if (TextUtils.isEmpty(username)) {
+            inputUsername.setError("Define um username");
             return;
         }
         if (TextUtils.isEmpty(curso)) {
@@ -154,12 +161,13 @@ public class RegisterActivity extends AppCompatActivity {
         String email = inputEmail.getEditText().getText().toString().trim();
         String nome = inputNome.getEditText().getText().toString().trim();
         String curso = inputCurso.getEditText().getText().toString().trim();
+        String username = inputUsername.getEditText().getText().toString().trim().replace(" ", "").toLowerCase();
 
         // 1. AQUI ESTÁ A MAGIA: Descobrimos a escola automaticamente
         String universidade = obterNomeEscola(email);
 
         // 2. Criamos o objeto User com a universidade correta (em vez de texto fixo)
-        User user = new User(uid, nome, email, curso, universidade);
+        User user = new User(uid, nome, username, email, curso, universidade);
 
         // 3. Guardar no Firestore (o resto do teu código continua igual)
         db.collection("users").document(uid).set(user)
