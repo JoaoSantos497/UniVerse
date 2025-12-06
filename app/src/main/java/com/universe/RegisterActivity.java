@@ -88,8 +88,6 @@ public class RegisterActivity extends AppCompatActivity {
         inputEmail.setError(null);   // Limpa erro do Email
         inputPassword.setError(null); // Limpa erro da Password
         inputConfirmPassword.setError(null);
-        progressBar.setVisibility(View.VISIBLE);
-
 
         // 1. Obter os textos escritos
         final String nome = inputNome.getEditText().getText().toString().trim();
