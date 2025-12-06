@@ -7,8 +7,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton; // <--- NÃO ESQUECER ESTE IMPORT
+import android.widget.ImageButton; // Importante
 import android.widget.TextView;
+// Importante para ver erros
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,12 +17,12 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener; // Importante
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.FirebaseFirestoreException; // Importante
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,14 +33,14 @@ public class ProfileFragment extends Fragment {
     private TextView profileAvatar, profileName, profileCurso, profileUni, profileEmail, profileUsername;
     private TextView txtMyFollowers, txtMyFollowing;
     private Button btnLogout, btnEditProfile;
-
-    // 1. AQUI ESTAVA A FALTAR A VARIÁVEL
     private ImageButton btnSettings;
 
+    // Variáveis para a Lista de Posts
     private RecyclerView recyclerView;
     private PostAdapter postAdapter;
     private List<Post> postList;
 
+    // Variáveis do Firebase
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
 
@@ -64,17 +65,16 @@ public class ProfileFragment extends Fragment {
 
         btnLogout = view.findViewById(R.id.btnLogout);
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
-
-        // 2. AQUI ESTAVA A FALTAR A LIGAÇÃO AO XML
         btnSettings = view.findViewById(R.id.btnSettings);
 
+        // Configurar a Lista de Posts
         recyclerView = view.findViewById(R.id.recyclerProfilePosts);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        // 3. AQUI ESTAVA A FALTAR O CLIQUE
+        // Ações dos Botões
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), SettingsActivity.class);
             startActivity(intent);
@@ -92,21 +92,66 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
+        // CARREGAR DADOS
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            // Chamamos as funções que usam "Tempo Real"
+            carregarDadosEmTempoReal(user.getUid());
+            carregarMeusContadores(user.getUid());
+            carregarMeusPosts(user.getUid());
+        }
+
         return view;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null) {
-            // Nota: Se quiseres atualização em tempo real, usa o SnapshotListener aqui
-            // como fizemos antes, em vez do .get()
-            profileEmail.setText(user.getEmail());
-            carregarDadosDoUtilizador(user.getUid());
-            carregarMeusPosts(user.getUid());
-            carregarMeusContadores(user.getUid());
-        }
+    // --- CORREÇÃO PRINCIPAL: Usar addSnapshotListener para ler os dados ---
+    private void carregarDadosEmTempoReal(String uid) {
+        db.collection("users").document(uid)
+                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            // Se houver um erro, mostramos um aviso (útil para debug)
+                            // Toast.makeText(getContext(), "Erro ao carregar perfil: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        if (documentSnapshot != null && documentSnapshot.exists()) {
+                            // Converter documento para Objeto User
+                            User aluno = documentSnapshot.toObject(User.class);
+
+                            if (aluno != null) {
+                                // Preencher os textos
+                                profileName.setText(aluno.getNome());
+                                profileCurso.setText(aluno.getCurso());
+                                profileUni.setText(aluno.getUniversidade());
+
+                                // O email agora vem da BD para estar sempre atualizado
+                                profileEmail.setText(aluno.getEmail());
+
+                                // Username
+                                if (aluno.getUsername() != null && !aluno.getUsername().isEmpty()) {
+                                    profileUsername.setText("@" + aluno.getUsername());
+                                } else {
+                                    profileUsername.setText("");
+                                }
+
+                                // Avatar Colorido
+                                String nome = aluno.getNome();
+                                if (nome != null && !nome.isEmpty()) {
+                                    String inicial = nome.substring(0, 1).toUpperCase();
+                                    profileAvatar.setText(inicial);
+                                    int hash = nome.hashCode();
+                                    profileAvatar.getBackground().setTint(Color.rgb(
+                                            Math.abs(hash * 25) % 255,
+                                            Math.abs(hash * 80) % 255,
+                                            Math.abs(hash * 13) % 255
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                });
     }
 
     private void carregarMeusContadores(String uid) {
@@ -121,51 +166,21 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    private void carregarDadosDoUtilizador(String uid) {
-        db.collection("users").document(uid).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User aluno = documentSnapshot.toObject(User.class);
-                        if (aluno != null) {
-                            profileName.setText(aluno.getNome());
-                            profileCurso.setText(aluno.getCurso());
-                            profileUni.setText(aluno.getUniversidade());
-
-                            if (aluno.getUsername() != null && !aluno.getUsername().isEmpty()) {
-                                profileUsername.setText("@" + aluno.getUsername());
-                            } else {
-                                profileUsername.setText("");
-                            }
-
-                            String nome = aluno.getNome();
-                            if(nome != null && !nome.isEmpty()) {
-                                String inicial = nome.substring(0, 1).toUpperCase();
-                                profileAvatar.setText(inicial);
-                                int hash = nome.hashCode();
-                                profileAvatar.getBackground().setTint(Color.rgb(
-                                        Math.abs(hash * 25) % 255,
-                                        Math.abs(hash * 80) % 255,
-                                        Math.abs(hash * 13) % 255
-                                ));
-                            }
-                        }
-                    }
-                });
-    }
-
     private void carregarMeusPosts(String uid) {
         db.collection("posts")
                 .whereEqualTo("userId", uid)
                 .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    postList.clear();
-                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                        Post post = doc.toObject(Post.class);
-                        post.setPostId(doc.getId());
-                        postList.add(post);
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) return;
+                    if (value != null) {
+                        postList.clear();
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            Post post = doc.toObject(Post.class);
+                            post.setPostId(doc.getId());
+                            postList.add(post);
+                        }
+                        postAdapter.notifyDataSetChanged();
                     }
-                    postAdapter.notifyDataSetChanged();
                 });
     }
 }

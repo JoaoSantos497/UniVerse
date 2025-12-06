@@ -43,12 +43,7 @@ public class CreatePostActivity extends AppCompatActivity {
         btnPublish = findViewById(R.id.btnPublish);
 
         // Configurar Botão
-        btnPublish.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                publicarPost();
-            }
-        });
+        btnPublish.setOnClickListener(v -> publicarPost());
     }
 
     private void publicarPost() {
@@ -69,24 +64,33 @@ public class CreatePostActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(DocumentSnapshot documentSnapshot) {
                         if (documentSnapshot.exists()) {
+                            // O utilizador existe! Vamos publicar.
                             User user = documentSnapshot.toObject(User.class);
 
                             String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                             long timestamp = System.currentTimeMillis();
 
+                            // Usa o nome do utilizador ou "Anónimo" se vier vazio
+                            String nomeAutor = (user.getNome() != null) ? user.getNome() : "Anónimo";
 
-                            Post novoPost = new Post(uid, user.getNome(), content, dataHora, timestamp);
-                            // ----------------------------
-
+                            Post novoPost = new Post(uid, nomeAutor, content, dataHora, timestamp);
                             guardarNoFirestore(novoPost);
+
+                        } else {
+                            // --- AQUI ESTÁ A CORREÇÃO ---
+                            // Se o utilizador não existir na BD, desbloqueia o botão e avisa.
+                            btnPublish.setEnabled(true);
+                            btnPublish.setText("Publicar");
+                            Toast.makeText(CreatePostActivity.this, "Erro: A tua conta está incompleta. Faz logout e cria uma nova.", Toast.LENGTH_LONG).show();
                         }
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(CreatePostActivity.this, "Erro ao obter utilizador", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(CreatePostActivity.this, "Erro de ligação: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         btnPublish.setEnabled(true);
+                        btnPublish.setText("Publicar");
                     }
                 });
     }
