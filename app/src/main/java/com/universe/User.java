@@ -8,6 +8,7 @@ public class User {
     private String curso;
     private String universidade;
     private long ultimaTrocaUsername;
+    private String photoUrl;
 
     // Construtor padrão
     public User() {}
@@ -35,4 +36,6 @@ public class User {
     public String getEmail() { return email; }
     public String getCurso() { return curso; }
     public String getUniversidade() { return universidade; }
+    public String getPhotoUrl() { return photoUrl; }
+    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 }

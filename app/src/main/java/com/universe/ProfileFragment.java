@@ -7,9 +7,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton; // Importante
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-// Importante para ver erros
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,12 +18,13 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener; // Importante
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException; // Importante
+import com.google.firebase.firestore.FirebaseFirestoreException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +32,13 @@ import java.util.List;
 public class ProfileFragment extends Fragment {
 
     // Variáveis da UI
-    private TextView profileAvatar, profileName, profileCurso, profileUni, profileEmail, profileUsername;
+    private ImageView profileAvatar;
+    private TextView profileName, profileCurso, profileUni, profileEmail, profileUsername;
     private TextView txtMyFollowers, txtMyFollowing;
-    private Button btnLogout, btnEditProfile;
+    private LinearLayout emptyView;
+
+    // REMOVI O btnLogout DAQUI
+    private Button btnEditProfile;
     private ImageButton btnSettings;
 
     // Variáveis para a Lista de Posts
@@ -62,8 +68,9 @@ public class ProfileFragment extends Fragment {
 
         txtMyFollowers = view.findViewById(R.id.txtMyFollowers);
         txtMyFollowing = view.findViewById(R.id.txtMyFollowing);
+        emptyView = view.findViewById(R.id.emptyView);
 
-        btnLogout = view.findViewById(R.id.btnLogout);
+        // REMOVI A LIGAÇÃO DO ID btnLogout DAQUI
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
         btnSettings = view.findViewById(R.id.btnSettings);
 
@@ -85,17 +92,9 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
-        btnLogout.setOnClickListener(v -> {
-            mAuth.signOut();
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-        });
-
         // CARREGAR DADOS
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            // Chamamos as funções que usam "Tempo Real"
             carregarDadosEmTempoReal(user.getUid());
             carregarMeusContadores(user.getUid());
             carregarMeusPosts(user.getUid());
@@ -104,49 +103,38 @@ public class ProfileFragment extends Fragment {
         return view;
     }
 
-    // --- CORREÇÃO PRINCIPAL: Usar addSnapshotListener para ler os dados ---
     private void carregarDadosEmTempoReal(String uid) {
         db.collection("users").document(uid)
                 .addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
                     public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException error) {
-                        if (error != null) {
-                            // Se houver um erro, mostramos um aviso (útil para debug)
-                            // Toast.makeText(getContext(), "Erro ao carregar perfil: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                            return;
-                        }
+                        if (error != null) return;
 
                         if (documentSnapshot != null && documentSnapshot.exists()) {
                             // Converter documento para Objeto User
                             User aluno = documentSnapshot.toObject(User.class);
 
                             if (aluno != null) {
-                                // Preencher os textos
+                                // Textos
                                 profileName.setText(aluno.getNome());
                                 profileCurso.setText(aluno.getCurso());
                                 profileUni.setText(aluno.getUniversidade());
-
-                                // O email agora vem da BD para estar sempre atualizado
                                 profileEmail.setText(aluno.getEmail());
 
-                                // Username
                                 if (aluno.getUsername() != null && !aluno.getUsername().isEmpty()) {
                                     profileUsername.setText("@" + aluno.getUsername());
                                 } else {
                                     profileUsername.setText("");
                                 }
 
-                                // Avatar Colorido
-                                String nome = aluno.getNome();
-                                if (nome != null && !nome.isEmpty()) {
-                                    String inicial = nome.substring(0, 1).toUpperCase();
-                                    profileAvatar.setText(inicial);
-                                    int hash = nome.hashCode();
-                                    profileAvatar.getBackground().setTint(Color.rgb(
-                                            Math.abs(hash * 25) % 255,
-                                            Math.abs(hash * 80) % 255,
-                                            Math.abs(hash * 13) % 255
-                                    ));
+                                // Carregar FOTO com Glide
+                                if (aluno.getPhotoUrl() != null && !aluno.getPhotoUrl().isEmpty()) {
+                                    Glide.with(getContext())
+                                            .load(aluno.getPhotoUrl())
+                                            .circleCrop()
+                                            .into(profileAvatar);
+                                } else {
+                                    profileAvatar.setImageResource(R.drawable.circle_bg);
                                 }
                             }
                         }
@@ -172,6 +160,7 @@ public class ProfileFragment extends Fragment {
                 .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) return;
+
                     if (value != null) {
                         postList.clear();
                         for (DocumentSnapshot doc : value.getDocuments()) {
@@ -180,6 +169,14 @@ public class ProfileFragment extends Fragment {
                             postList.add(post);
                         }
                         postAdapter.notifyDataSetChanged();
+
+                        if (postList.isEmpty()) {
+                            recyclerView.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.VISIBLE);
+                        } else {
+                            recyclerView.setVisibility(View.VISIBLE);
+                            emptyView.setVisibility(View.GONE);
+                        }
                     }
                 });
     }

@@ -45,6 +45,9 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.google.firebase.firestore)
     implementation libs.firebase.analytics
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation libs.swiperefreshlayout
+    implementation(libs.firebase.storage)
+    implementation(libs.glide)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
 }
