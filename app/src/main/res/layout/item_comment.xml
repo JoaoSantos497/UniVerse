@@ -1,43 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:layout_marginBottom="4dp"
-    android:background="#FAFAFA">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    android:layout_marginTop="30dp"
+
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    android:background="#FFFFFF">
+
+    <ImageView
+        android:id="@+id/commentProfileImage"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/circle_bg"
+        android:background="@drawable/circle_bg"
+        android:scaleType="centerCrop"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/commentUser"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        tools:text="Nome do Aluno"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:textColor="#000000"
+        android:layout_marginStart="12dp"
+        app:layout_constraintStart_toEndOf="@id/commentProfileImage"
+        app:layout_constraintTop_toTopOf="@id/commentProfileImage" />
 
-        <TextView
-            android:id="@+id/commentUser"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/comment_nome"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:textColor="#000000" />
-
-        <TextView
-            android:id="@+id/commentDate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/comment_date"
-            android:gravity="end"
-            android:textSize="12sp"
-            android:textColor="#999999" />
-    </LinearLayout>
+    <TextView
+        android:id="@+id/commentDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="2 min"
+        android:textSize="12sp"
+        android:textColor="#999999"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toEndOf="@id/commentUser"
+        app:layout_constraintBaseline_toBaselineOf="@id/commentUser" />
 
     <TextView
         android:id="@+id/commentContent"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/comment_content"
+        tools:text="Comentário..."
         android:textSize="14sp"
         android:textColor="#333333"
-        android:layout_marginTop="2dp"/>
+        android:layout_marginTop="2dp"
+        app:layout_constraintStart_toStartOf="@id/commentUser"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/commentUser" />
 
-</LinearLayout>
+    <View
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="#F0F0F0"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/commentContent"
+        app:layout_constraintStart_toStartOf="@id/commentUser"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

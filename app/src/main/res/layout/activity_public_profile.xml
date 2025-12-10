@@ -6,17 +6,19 @@
     android:gravity="center_horizontal"
     android:padding="24dp"
     android:background="#F5F5F5"
-    android:fitsSystemWindows="true"> <TextView
-    android:id="@+id/publicProfileAvatar"
-    android:layout_width="100dp"
-    android:layout_height="100dp"
-    android:background="@drawable/circle_bg"
-    android:gravity="center"
-    android:text="A"
-    android:textColor="#FFFFFF"
-    android:textSize="40sp"
-    android:textStyle="bold"
-    android:layout_marginBottom="16dp" />
+
+    android:fitsSystemWindows="true">
+
+    <ImageView
+        android:id="@+id/publicProfileAvatar"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/circle_bg"
+        android:background="@drawable/circle_bg"
+        android:padding="2dp"
+        android:scaleType="centerCrop"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Avatar do Utilizador" />
 
     <TextView
         android:id="@+id/publicProfileName"

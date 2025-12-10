@@ -4,10 +4,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ImageButton; // Importante
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -28,6 +27,7 @@ public class CommentsActivity extends AppCompatActivity {
 
     private EditText inputComment;
     private ImageButton btnSend;
+    private ImageButton btnBack; // <--- NOVA VARIÁVEL
     private RecyclerView recyclerView;
 
     private CommentsAdapter adapter;
@@ -36,14 +36,14 @@ public class CommentsActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    private String postId; // O ID do post que estamos a comentar
+    private String postId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_comments);
 
-        // 1. Receber o ID do Post (Vem do clique no Feed)
+        // 1. Receber o ID do Post
         postId = getIntent().getStringExtra("postId");
 
         if (postId == null) {
@@ -52,24 +52,30 @@ public class CommentsActivity extends AppCompatActivity {
             return;
         }
 
-        // 2. Configurar Firebase e UI
+        // 2. Configurar Firebase
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        // 3. Ligar componentes da UI
         inputComment = findViewById(R.id.inputComment);
         btnSend = findViewById(R.id.btnSendComment);
         recyclerView = findViewById(R.id.recyclerComments);
+        btnBack = findViewById(R.id.btnBackComments); // <--- LIGAR AO NOVO ID DO XML
 
-        // 3. Configurar Lista
+        // 4. Ação do Botão Voltar (NOVO)
+        btnBack.setOnClickListener(v -> finish());
+
+        // 5. Configurar Lista
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentList = new ArrayList<>();
+        // Nota: Certifica-te que tens a classe CommentsAdapter criada
         adapter = new CommentsAdapter(commentList);
         recyclerView.setAdapter(adapter);
 
-        // 4. Carregar comentários existentes
+        // 6. Carregar comentários
         carregarComentarios();
 
-        // 5. Botão de Enviar
+        // 7. Botão de Enviar
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -79,9 +85,8 @@ public class CommentsActivity extends AppCompatActivity {
     }
 
     private void carregarComentarios() {
-        // Entramos na pasta do Post -> Sub-pasta 'comments'
         db.collection("posts").document(postId).collection("comments")
-                .orderBy("timestamp") // Mais antigos em cima (tipo conversa)
+                .orderBy("timestamp")
                 .addSnapshotListener(new EventListener<QuerySnapshot>() {
                     @Override
                     public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
@@ -90,10 +95,12 @@ public class CommentsActivity extends AppCompatActivity {
                         if (value != null) {
                             commentList.clear();
                             for (DocumentSnapshot doc : value.getDocuments()) {
+                                // Converte o documento para a classe Comment
                                 commentList.add(doc.toObject(Comment.class));
                             }
                             adapter.notifyDataSetChanged();
-                            // Rolar para o fundo quando chega um novo
+
+                            // Rolar para o último comentário
                             if (commentList.size() > 0) {
                                 recyclerView.scrollToPosition(commentList.size() - 1);
                             }
@@ -106,11 +113,10 @@ public class CommentsActivity extends AppCompatActivity {
         String texto = inputComment.getText().toString().trim();
         if (TextUtils.isEmpty(texto)) return;
 
-        inputComment.setText(""); // Limpa a caixa logo para ser rápido
+        inputComment.setText("");
 
-        String uid = mAuth.getCurrentUser().getUid();
+        String uid = mAuth.getCurrentUser().getUid(); // Este é o userId que faltava!
 
-        // Precisamos do nome do utilizador antes de gravar
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                     @Override
@@ -118,13 +124,15 @@ public class CommentsActivity extends AppCompatActivity {
                         if (documentSnapshot.exists()) {
                             User user = documentSnapshot.toObject(User.class);
 
-                            // Criar objeto Comentário
-                            long timestamp = System.currentTimeMillis();
-                            Comment comment = new Comment(user.getNome(), texto, timestamp);
+                            if (user != null) {
+                                long timestamp = System.currentTimeMillis();
 
-                            // Guardar na sub-coleção "comments" dentro do Post
-                            db.collection("posts").document(postId).collection("comments")
-                                    .add(comment);
+                                // AGORA SIM: Passamos o 'uid' (userId) como primeiro dado
+                                Comment comment = new Comment(uid, user.getNome(), texto, timestamp);
+
+                                db.collection("posts").document(postId).collection("comments")
+                                        .add(comment);
+                            }
                         }
                     }
                 });

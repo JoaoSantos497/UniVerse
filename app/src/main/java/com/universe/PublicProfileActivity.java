@@ -4,12 +4,14 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView; // <--- IMPORTANTE: Tens de ter isto
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide; // <--- IMPORTANTE: Tens de ter isto
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -21,7 +23,10 @@ import java.util.Map;
 
 public class PublicProfileActivity extends AppCompatActivity {
 
-    private TextView txtAvatar, txtName, txtUsername, txtCourse, txtUni; // Adicionado txtUsername
+    // 1. MUDANÇA: Agora é ImageView (antes era TextView txtAvatar)
+    private ImageView imgAvatar;
+
+    private TextView txtName, txtUsername, txtCourse, txtUni;
     private TextView txtFollowersCount, txtFollowingCount;
     private Button btnBack, btnFollow;
 
@@ -45,10 +50,11 @@ public class PublicProfileActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         currentUserId = mAuth.getCurrentUser().getUid();
 
-        // Ligar componentes
-        txtAvatar = findViewById(R.id.publicProfileAvatar);
+        // 2. MUDANÇA: Ligar ao ID do XML
+        imgAvatar = findViewById(R.id.publicProfileAvatar);
+
         txtName = findViewById(R.id.publicProfileName);
-        txtUsername = findViewById(R.id.publicProfileUsername); // <--- LIGAR
+        txtUsername = findViewById(R.id.publicProfileUsername);
         txtCourse = findViewById(R.id.publicProfileCourse);
         txtUni = findViewById(R.id.publicProfileUni);
         txtFollowersCount = findViewById(R.id.txtFollowersCount);
@@ -62,6 +68,7 @@ public class PublicProfileActivity extends AppCompatActivity {
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
+        // Receber o ID da pessoa que queremos ver
         targetUserId = getIntent().getStringExtra("targetUserId");
 
         if (targetUserId != null) {
@@ -140,23 +147,20 @@ public class PublicProfileActivity extends AppCompatActivity {
                             txtCourse.setText(user.getCurso());
                             txtUni.setText(user.getUniversidade());
 
-                            // --- USERNAME ---
                             if (user.getUsername() != null && !user.getUsername().isEmpty()) {
                                 txtUsername.setText("@" + user.getUsername());
                             } else {
                                 txtUsername.setText("");
                             }
 
-                            // --- AVATAR ---
-                            String nome = user.getNome();
-                            if(nome != null && !nome.isEmpty()) {
-                                txtAvatar.setText(nome.substring(0, 1).toUpperCase());
-                                int hash = nome.hashCode();
-                                txtAvatar.getBackground().setTint(Color.rgb(
-                                        Math.abs(hash * 25) % 255,
-                                        Math.abs(hash * 80) % 255,
-                                        Math.abs(hash * 13) % 255
-                                ));
+                            // 3. MUDANÇA: Carregar foto com GLIDE
+                            if (user.getPhotoUrl() != null && !user.getPhotoUrl().isEmpty()) {
+                                Glide.with(this)
+                                        .load(user.getPhotoUrl())
+                                        .circleCrop()
+                                        .into(imgAvatar);
+                            } else {
+                                imgAvatar.setImageResource(R.drawable.circle_bg);
                             }
                         }
                     }
