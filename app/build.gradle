@@ -48,6 +48,7 @@ dependencies {
     implementation libs.swiperefreshlayout
     implementation(libs.firebase.storage)
     implementation(libs.glide)
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.swiperefreshlayout.v110)
+
 
 }

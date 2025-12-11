@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.1"
+agp = "8.13.2"
 firebaseBom = "34.6.0"
 firebaseFirestore = "26.0.2"
 glide = "5.0.5"
@@ -11,6 +11,8 @@ material = "1.13.0"
 activity = "1.12.1"
 constraintlayout = "2.2.1"
 swiperefreshlayout = "1.2.0"
+swiperefreshlayoutVersion = "1.1.0"
+
 
 [libraries]
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
@@ -28,7 +30,9 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
+swiperefreshlayout-v110 = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayoutVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+
 

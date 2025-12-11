@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:background="@drawable/bg_search_outline"
-        android:hint="Pesquisar"
+        android:hint="Pesquisar utilizador..."
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:drawableStart="@android:drawable/ic_menu_search"

@@ -7,13 +7,13 @@ public class User {
     private String email;
     private String curso;
     private String universidade;
-    private long ultimaTrocaUsername;
     private String photoUrl;
+    private long ultimaTrocaUsername;
 
-    // Construtor padrão
+    // Construtor padrão (Obrigatório para o Firebase)
     public User() {}
 
-    // Construtor Atualizado
+    // Construtor Completo
     public User(String uid, String nome, String username, String email, String curso, String universidade) {
         this.uid = uid;
         this.nome = nome;
@@ -22,20 +22,29 @@ public class User {
         this.curso = curso;
         this.universidade = universidade;
         this.ultimaTrocaUsername = 0;
-
     }
 
-    // Getters e Setters
-    public String getUid() { return uid; }
-    public String getNome() { return nome; }
-    public long getUltimaTrocaUsername() { return ultimaTrocaUsername; }
+    // --- GETTERS E SETTERS ---
 
-    public String getUsername() { return username; } // <--- Novo Getter
-    public void setUsername(String username) { this.username = username; } // <--- Novo Setter
+    public String getUid() { return uid; }
+    public void setUid(String uid) { this.uid = uid; } // RESOLVE O ERRO DO SEARCH
+
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
     public String getEmail() { return email; }
+
     public String getCurso() { return curso; }
+    public void setCurso(String curso) { this.curso = curso; }
+
     public String getUniversidade() { return universidade; }
+    public void setUniversidade(String universidade) { this.universidade = universidade; }
+
     public String getPhotoUrl() { return photoUrl; }
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+
+    public long getUltimaTrocaUsername() { return ultimaTrocaUsername; }
 }

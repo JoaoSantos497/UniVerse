@@ -87,7 +87,12 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                             for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                                adicionarSemDuplicados(doc.toObject(User.class));
+                                User user = doc.toObject(User.class);
+                                if (user != null) {
+                                    // CORREÇÃO: Definir o ID manualmente para o clique funcionar
+                                    user.setUid(doc.getId());
+                                    adicionarSemDuplicados(user);
+                                }
                             }
                             userAdapter.notifyDataSetChanged();
                         }
@@ -95,7 +100,7 @@ public class SearchFragment extends Fragment {
         }
         // CASO 2: Pesquisa HÍBRIDA (Nome OU Username)
         else {
-            // A. Pesquisar por NOME (tal como escreveste, ex: "Joao")
+            // A. Pesquisar por NOME
             db.collection("users")
                     .orderBy("nome")
                     .startAt(texto)
@@ -105,14 +110,17 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
                             for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                                adicionarSemDuplicados(doc.toObject(User.class));
+                                User user = doc.toObject(User.class);
+                                if (user != null) {
+                                    // CORREÇÃO: Definir o ID manualmente
+                                    user.setUid(doc.getId());
+                                    adicionarSemDuplicados(user);
+                                }
                             }
-                            // Atualizamos a lista já com os nomes encontrados
                             userAdapter.notifyDataSetChanged();
 
                             // B. E agora pesquisamos também por USERNAME (em minúsculas)
-                            // Fazemos isto DENTRO do sucesso do primeiro para não atropelar
-                            String usernameBusca = texto.toLowerCase(); // Usernames são sempre minúsculos
+                            String usernameBusca = texto.toLowerCase();
 
                             db.collection("users")
                                     .orderBy("username")
@@ -123,9 +131,13 @@ public class SearchFragment extends Fragment {
                                         @Override
                                         public void onSuccess(QuerySnapshot querySnapshotUsername) {
                                             for (DocumentSnapshot doc : querySnapshotUsername) {
-                                                adicionarSemDuplicados(doc.toObject(User.class));
+                                                User user = doc.toObject(User.class);
+                                                if (user != null) {
+                                                    // CORREÇÃO: Definir o ID manualmente
+                                                    user.setUid(doc.getId());
+                                                    adicionarSemDuplicados(user);
+                                                }
                                             }
-                                            // Atualizamos a lista de novo com os usernames extra
                                             userAdapter.notifyDataSetChanged();
                                         }
                                     });
