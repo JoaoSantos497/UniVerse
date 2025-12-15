@@ -13,18 +13,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:layout_marginTop="30dp">
-
-        <ImageButton
-            android:id="@+id/btnDeletePost"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_menu_delete"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            app:tint="#D32F2F"
-            android:visibility="gone" />
+        android:layout_marginTop="0dp"> <ImageButton
+        android:id="@+id/btnDeletePost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@android:drawable/ic_menu_delete"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        app:tint="#D32F2F"
+        android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/headerLayout"
@@ -78,12 +76,22 @@
             android:textSize="15sp"
             android:textColor="#333333"
             android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="12dp"/>
+
+        <ImageView
+            android:id="@+id/postImage"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:scaleType="centerCrop"
+            android:layout_below="@id/postContent"
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/bg_search_outline"
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/postContent"
+            android:layout_below="@id/postImage"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 

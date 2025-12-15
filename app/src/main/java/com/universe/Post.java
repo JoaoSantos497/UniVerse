@@ -11,19 +11,20 @@ public class Post {
     private String date;
     private long timestamp;
     private List<String> likes;
+    private String imageUrl;
 
     @Exclude
     private String postId;
 
     public Post() { }
 
-    // Construtor atualizado com userId
-    public Post(String userId, String userName, String content, String date, long timestamp) {
-        this.userId = userId; // Save ID
+    public Post(String userId, String userName, String content, String date, long timestamp, String imageUrl) {
+        this.userId = userId;
         this.userName = userName;
         this.content = content;
         this.date = date;
         this.timestamp = timestamp;
+        this.imageUrl = imageUrl;
         this.likes = new ArrayList<>();
     }
 
@@ -33,7 +34,8 @@ public class Post {
     public String getContent() { return content; }
     public String getDate() { return date; }
     public long getTimestamp() { return timestamp; }
-
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public List<String> getLikes() {
         if (likes == null) return new ArrayList<>();
         return likes;
