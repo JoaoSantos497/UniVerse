@@ -12,6 +12,7 @@ activity = "1.12.1"
 constraintlayout = "2.2.1"
 swiperefreshlayout = "1.2.0"
 swiperefreshlayoutVersion = "1.1.0"
+playServicesMlkitTextRecognitionCommon = "19.1.0"
 
 
 [libraries]
@@ -31,6 +32,7 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 swiperefreshlayout-v110 = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayoutVersion" }
+play-services-mlkit-text-recognition-common = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-common", version.ref = "playServicesMlkitTextRecognitionCommon" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
