@@ -7,13 +7,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.ImageView; // Importante
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide; // Importante
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -59,16 +59,25 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 android.text.format.DateUtils.MINUTE_IN_MILLIS);
         holder.txtDate.setText(relativeTime);
 
-        // --- 3. IMAGEM DO POST (NOVO) ---
-        // Se o post tiver uma imagem anexada, mostramos. Se não, escondemos o ImageView.
+        // --- 3. IMAGEM DO POST ---
         if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
             holder.postImage.setVisibility(View.VISIBLE);
+
             Glide.with(context)
                     .load(post.getImageUrl())
-                    .centerCrop() // Ajusta a imagem para preencher o espaço
+                    .centerCrop()
                     .into(holder.postImage);
+
+            // --- NOVO: CLIQUE PARA ABRIR EM ECRÃ CHEIO ---
+            holder.postImage.setOnClickListener(v -> {
+                Intent intent = new Intent(context, FullScreenImageActivity.class);
+                intent.putExtra("imageUrl", post.getImageUrl());
+                context.startActivity(intent);
+            });
+
         } else {
             holder.postImage.setVisibility(View.GONE);
+            holder.postImage.setOnClickListener(null); // Remove o clique se não houver imagem
         }
 
         // --- 4. FOTO DE PERFIL DO UTILIZADOR ---
@@ -154,8 +163,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         TextView txtUserName, txtContent, txtDate, txtLike, txtComment;
-        ImageView imgProfile; // Foto de perfil
-        ImageView postImage;  // <--- NOVA: Imagem do post
+        ImageView imgProfile;
+        ImageView postImage;
         ImageButton btnDelete;
 
         public PostViewHolder(@NonNull View itemView) {
@@ -167,8 +176,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             txtComment = itemView.findViewById(R.id.postCommentBtn);
             imgProfile = itemView.findViewById(R.id.postProfileImage);
             btnDelete = itemView.findViewById(R.id.btnDeletePost);
-
-            // Ligar ao ID da imagem que adicionámos no XML
             postImage = itemView.findViewById(R.id.postImage);
         }
     }

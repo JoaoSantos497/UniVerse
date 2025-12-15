@@ -1,6 +1,7 @@
 package com.universe;
 
 import android.content.Context;
+import android.content.Intent; // Importante
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +22,6 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
     private FirebaseFirestore db;
     private Context context;
 
-
     public CommentsAdapter(List<Comment> commentList) {
         this.commentList = commentList;
         this.db = FirebaseFirestore.getInstance();
@@ -39,11 +39,9 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
     public void onBindViewHolder(@NonNull CommentViewHolder holder, int position) {
         Comment comment = commentList.get(position);
 
-        // 1. Texto e Nome
         holder.userName.setText(comment.getUserName());
         holder.content.setText(comment.getContent());
 
-        // 2. Data
         long now = System.currentTimeMillis();
         CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
                 comment.getTimestamp(),
@@ -51,15 +49,26 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
                 android.text.format.DateUtils.MINUTE_IN_MILLIS);
         holder.date.setText(relativeTime);
 
-        // --- 3. IMAGEM ANEXADA NO COMENTÁRIO (NOVO) ---
+        // --- 3. IMAGEM ANEXADA ---
         if (comment.getCommentImageUrl() != null && !comment.getCommentImageUrl().isEmpty()) {
             holder.attachedImage.setVisibility(View.VISIBLE);
+
             Glide.with(context)
                     .load(comment.getCommentImageUrl())
-                    // Não usamos circleCrop aqui porque queremos ver a foto normal
                     .into(holder.attachedImage);
+
+            // --- NOVO: CLIQUE PARA ABRIR EM ECRÃ INTEIRO ---
+            holder.attachedImage.setOnClickListener(v -> {
+                Intent intent = new Intent(context, FullScreenImageActivity.class);
+                intent.putExtra("imageUrl", comment.getCommentImageUrl());
+                context.startActivity(intent);
+            });
+            // -----------------------------------------------
+
         } else {
             holder.attachedImage.setVisibility(View.GONE);
+            // Remove o listener para evitar cliques em áreas vazias
+            holder.attachedImage.setOnClickListener(null);
         }
 
         // --- 4. FOTO DE PERFIL ---
@@ -96,8 +105,6 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
             content = itemView.findViewById(R.id.commentContent);
             date = itemView.findViewById(R.id.commentDate);
             imgProfile = itemView.findViewById(R.id.commentProfileImage);
-
-            // Ligar ao ID que criámos no item_comment.xml
             attachedImage = itemView.findViewById(R.id.commentAttachedImage);
         }
     }
