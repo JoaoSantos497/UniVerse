@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -34,7 +33,7 @@ public class ProfileFragment extends Fragment {
     private ImageView profileAvatar;
     private TextView profileName, profileCurso, profileUni, profileEmail, profileUsername;
     private TextView txtMyFollowers, txtMyFollowing;
-    private LinearLayout emptyView;
+    //private LinearLayout emptyView;
 
     private Button btnEditProfile;
     private ImageButton btnSettings;
@@ -66,7 +65,7 @@ public class ProfileFragment extends Fragment {
 
         txtMyFollowers = view.findViewById(R.id.txtMyFollowers);
         txtMyFollowing = view.findViewById(R.id.txtMyFollowing);
-        emptyView = view.findViewById(R.id.emptyView);
+        //emptyView = view.findViewById(R.id.emptyView);
 
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
         btnSettings = view.findViewById(R.id.btnSettings);
@@ -98,7 +97,6 @@ public class ProfileFragment extends Fragment {
             carregarMeusContadores(myUid);
             carregarMeusPosts(myUid);
 
-            // --- CORREÇÃO: Os cliques têm de estar aqui DENTRO ---
 
             // Clique nos Seguidores (Apanha o pai do TextView para clicar na área toda)
             if (txtMyFollowers.getParent() instanceof View) {
@@ -139,9 +137,9 @@ public class ProfileFragment extends Fragment {
                                 profileCurso.setText(aluno.getCurso());
 
                                 // Se tiveres os campos extra no layout:
-                                // profileUni.setText(aluno.getUniversidade());
-                                // profileEmail.setText(aluno.getEmail());
-                                // if (profileUsername != null) profileUsername.setText("@" + aluno.getUsername());
+                                profileUni.setText(aluno.getUniversidade());
+                                profileEmail.setText(aluno.getEmail());
+                                if (profileUsername != null) profileUsername.setText("@" + aluno.getUsername());
 
                                 if (aluno.getPhotoUrl() != null && !aluno.getPhotoUrl().isEmpty()) {
                                     if (getContext() != null) {

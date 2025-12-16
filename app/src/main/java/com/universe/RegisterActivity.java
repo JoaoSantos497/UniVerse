@@ -205,7 +205,7 @@ public class RegisterActivity extends AppCompatActivity {
     private String obterNomeEscola(String email) {
         if (email.contains("@esg.")) {
             return "Escola Superior de Gestão e Tecnologia";
-        } else if (email.contains("@eses.")) {
+        } else if (email.contains("@ese.")) {
             return "Escola Superior de Educação";
         } else if (email.contains("@esa.")) {
             return "Escola Superior Agrária";

@@ -32,9 +32,10 @@ public class PublicProfileActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    private String targetUserId; // O ID da pessoa que estamos a ver
-    private String currentUserId; // O meu ID
-    private boolean isFollowing = false; // Estado atual (Sigo ou não?)
+
+    private String targetUserId;
+    private String currentUserId;
+    private boolean isFollowing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,8 +91,6 @@ public class PublicProfileActivity extends AppCompatActivity {
         // 6. Contar Seguidores e A Seguir (Em tempo real)
         contarSeguidoresESeguindo();
 
-        // --- 7. CONFIGURAR CLIQUES PARA ABRIR LISTAS (AGORA NO SÍTIO CERTO) ---
-
         // Clique no número de seguidores
         txtFollowers.setOnClickListener(v -> abrirLista("followers"));
         // Clique na caixa toda (pai) dos seguidores
@@ -103,7 +102,6 @@ public class PublicProfileActivity extends AppCompatActivity {
         ((View) txtFollowing.getParent()).setOnClickListener(v -> abrirLista("following"));
     }
 
-    // --- MÉTODO QUE FALTAVA ---
     private void abrirLista(String type) {
         Intent intent = new Intent(this, UserListActivity.class);
         intent.putExtra("userId", targetUserId); // ID da pessoa que estamos a ver
