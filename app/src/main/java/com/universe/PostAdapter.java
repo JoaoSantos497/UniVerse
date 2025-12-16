@@ -18,7 +18,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.HashMap; // Importante
 import java.util.List;
+import java.util.Map;     // Importante
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
@@ -68,7 +70,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     .centerCrop()
                     .into(holder.postImage);
 
-            // --- NOVO: CLIQUE PARA ABRIR EM ECRÃ CHEIO ---
+            // Clique para ecrã cheio
             holder.postImage.setOnClickListener(v -> {
                 Intent intent = new Intent(context, FullScreenImageActivity.class);
                 intent.putExtra("imageUrl", post.getImageUrl());
@@ -77,7 +79,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         } else {
             holder.postImage.setVisibility(View.GONE);
-            holder.postImage.setOnClickListener(null); // Remove o clique se não houver imagem
+            holder.postImage.setOnClickListener(null);
         }
 
         // --- 4. FOTO DE PERFIL DO UTILIZADOR ---
@@ -93,7 +95,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     }
                 });
 
-        // --- 5. CLIQUE NA FOTO DE PERFIL -> IR PARA PERFIL PÚBLICO ---
+        // --- 5. CLIQUE NA FOTO DE PERFIL ---
         holder.imgProfile.setOnClickListener(v -> {
             if (!post.getUserId().equals(currentUserId)) {
                 Intent intent = new Intent(context, PublicProfileActivity.class);
@@ -102,7 +104,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             }
         });
 
-        // --- 6. LÓGICA DO LIKE ---
+        // --- 6. LÓGICA DO LIKE E NOTIFICAÇÃO ---
         List<String> likes = post.getLikes();
         boolean isLiked = likes != null && likes.contains(currentUserId);
         int likeCount = (likes != null) ? likes.size() : 0;
@@ -117,12 +119,18 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         holder.txtLike.setOnClickListener(v -> {
             if (post.getPostId() == null) return;
+
             if (isLiked) {
+                // Remover Like
                 db.collection("posts").document(post.getPostId())
                         .update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
+                // Dar Like
                 db.collection("posts").document(post.getPostId())
                         .update("likes", FieldValue.arrayUnion(currentUserId));
+
+                // --- NOVO: ENVIAR NOTIFICAÇÃO ---
+                enviarNotificacaoLike(post.getUserId(), post.getPostId());
             }
         });
 
@@ -159,6 +167,35 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     @Override
     public int getItemCount() {
         return postList.size();
+    }
+
+    // --- NOVO MÉTODO AUXILIAR PARA NOTIFICAÇÕES ---
+    private void enviarNotificacaoLike(String donoDoPostId, String postId) {
+        // Se eu der like no meu próprio post, não envia notificação
+        if (donoDoPostId.equals(currentUserId)) return;
+
+        // Vamos buscar os meus dados (quem deu o like) para por na notificação
+        db.collection("users").document(currentUserId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        User eu = documentSnapshot.toObject(User.class);
+                        if (eu != null) {
+                            // Criar os dados da notificação
+                            Map<String, Object> notifMap = new HashMap<>();
+                            notifMap.put("targetUserId", donoDoPostId); // Para quem vai
+                            notifMap.put("fromUserId", currentUserId);  // Quem fez
+                            notifMap.put("fromUserName", eu.getNome());
+                            notifMap.put("fromUserPhoto", eu.getPhotoUrl());
+                            notifMap.put("type", "like");
+                            notifMap.put("message", "gostou da tua publicação");
+                            notifMap.put("postId", postId);
+                            notifMap.put("timestamp", System.currentTimeMillis());
+
+                            // Gravar na coleção 'notifications'
+                            db.collection("notifications").add(notifMap);
+                        }
+                    }
+                });
     }
 
     public static class PostViewHolder extends RecyclerView.ViewHolder {

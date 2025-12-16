@@ -169,6 +169,10 @@ public class PublicProfileActivity extends AppCompatActivity {
                 .set(dados);
 
         Toast.makeText(this, "A seguir!", Toast.LENGTH_SHORT).show();
+
+        enviarNotificacao(targetUserId, "follow", "começou a seguir-te", null);
+
+        Toast.makeText(this, "A seguir!", Toast.LENGTH_SHORT).show();
     }
 
     private void deixarDeSeguir() {
@@ -202,4 +206,30 @@ public class PublicProfileActivity extends AppCompatActivity {
                     }
                 });
     }
+
+    // Metodo auxiliar para criar notificação no Firebase
+    private void enviarNotificacao(String receiverId, String type, String msg, String postId) {
+        if (receiverId.equals(currentUserId)) return; // Não notificar a mim próprio
+
+        db.collection("users").document(currentUserId).get().addOnSuccessListener(doc -> {
+            User eu = doc.toObject(User.class);
+            if (eu != null) {
+                // Cria o objeto Notificação
+                Notification notif = new Notification(
+                        currentUserId,
+                        eu.getNome(),
+                        eu.getPhotoUrl(),
+                        receiverId,
+                        type,
+                        msg,
+                        postId,
+                        System.currentTimeMillis()
+                );
+
+                // Grava no Firebase
+                db.collection("notifications").add(notif);
+            }
+        });
+    }
+
 }
