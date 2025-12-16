@@ -11,30 +11,34 @@
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
+        android:layout_alignParentTop="true"
         android:background="#FFFFFF"
         android:elevation="4dp"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_alignParentTop="true">
+        android:orientation="horizontal"
+
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        android:paddingTop="27dp">
 
         <ImageButton
             android:id="@+id/btnBackComments"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_arrow_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_marginEnd="16dp"
-            app:tint="#000000"/>
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#000000" />
 
         <ImageView
             android:id="@+id/publicProfileImage"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/circle_bg"
+            android:layout_marginEnd="12dp"
             android:background="@drawable/circle_bg"
             android:scaleType="centerCrop"
-            android:layout_marginEnd="12dp"/>
+            android:src="@drawable/circle_bg" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -47,22 +51,36 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Carregando..."
+                android:textColor="#000000"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#000000"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/publicProfileCourse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="..."
-                android:textSize="12sp"
-                android:textColor="#757575"/>
+                android:textColor="#757575"
+                android:textSize="12sp" />
         </LinearLayout>
 
-        <TextView android:id="@+id/publicFollowersCount" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
-        <TextView android:id="@+id/publicFollowingCount" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
-        <Button android:id="@+id/btnFollowProfile" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+        <TextView
+            android:id="@+id/publicFollowersCount"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/publicFollowingCount"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnFollowProfile"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
     </LinearLayout>
 
