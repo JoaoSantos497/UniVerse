@@ -1,7 +1,6 @@
 package com.universe;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,7 +36,6 @@ public class ProfileFragment extends Fragment {
     private TextView txtMyFollowers, txtMyFollowing;
     private LinearLayout emptyView;
 
-    // REMOVI O btnLogout DAQUI
     private Button btnEditProfile;
     private ImageButton btnSettings;
 
@@ -58,7 +56,7 @@ public class ProfileFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Ligar componentes
+        // 1. Ligar componentes
         profileAvatar = view.findViewById(R.id.profileAvatar);
         profileName = view.findViewById(R.id.profileName);
         profileUsername = view.findViewById(R.id.profileUsername);
@@ -70,18 +68,17 @@ public class ProfileFragment extends Fragment {
         txtMyFollowing = view.findViewById(R.id.txtMyFollowing);
         emptyView = view.findViewById(R.id.emptyView);
 
-        // REMOVI A LIGAÇÃO DO ID btnLogout DAQUI
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
         btnSettings = view.findViewById(R.id.btnSettings);
 
-        // Configurar a Lista de Posts
+        // 2. Configurar a Lista de Posts
         recyclerView = view.findViewById(R.id.recyclerProfilePosts);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        // Ações dos Botões
+        // 3. Ações dos Botões
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), SettingsActivity.class);
             startActivity(intent);
@@ -92,12 +89,36 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
-        // CARREGAR DADOS
+        // 4. CARREGAR DADOS E CONFIGURAR CLIQUES NAS LISTAS
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            carregarDadosEmTempoReal(user.getUid());
-            carregarMeusContadores(user.getUid());
-            carregarMeusPosts(user.getUid());
+            String myUid = user.getUid();
+
+            carregarDadosEmTempoReal(myUid);
+            carregarMeusContadores(myUid);
+            carregarMeusPosts(myUid);
+
+            // --- CORREÇÃO: Os cliques têm de estar aqui DENTRO ---
+
+            // Clique nos Seguidores (Apanha o pai do TextView para clicar na área toda)
+            if (txtMyFollowers.getParent() instanceof View) {
+                ((View) txtMyFollowers.getParent()).setOnClickListener(v -> {
+                    Intent intent = new Intent(getActivity(), UserListActivity.class);
+                    intent.putExtra("userId", myUid);
+                    intent.putExtra("type", "followers");
+                    startActivity(intent);
+                });
+            }
+
+            // Clique no A Seguir
+            if (txtMyFollowing.getParent() instanceof View) {
+                ((View) txtMyFollowing.getParent()).setOnClickListener(v -> {
+                    Intent intent = new Intent(getActivity(), UserListActivity.class);
+                    intent.putExtra("userId", myUid);
+                    intent.putExtra("type", "following");
+                    startActivity(intent);
+                });
+            }
         }
 
         return view;
@@ -111,28 +132,24 @@ public class ProfileFragment extends Fragment {
                         if (error != null) return;
 
                         if (documentSnapshot != null && documentSnapshot.exists()) {
-                            // Converter documento para Objeto User
                             User aluno = documentSnapshot.toObject(User.class);
 
                             if (aluno != null) {
-                                // Textos
                                 profileName.setText(aluno.getNome());
                                 profileCurso.setText(aluno.getCurso());
-                                profileUni.setText(aluno.getUniversidade());
-                                profileEmail.setText(aluno.getEmail());
 
-                                if (aluno.getUsername() != null && !aluno.getUsername().isEmpty()) {
-                                    profileUsername.setText("@" + aluno.getUsername());
-                                } else {
-                                    profileUsername.setText("");
-                                }
+                                // Se tiveres os campos extra no layout:
+                                // profileUni.setText(aluno.getUniversidade());
+                                // profileEmail.setText(aluno.getEmail());
+                                // if (profileUsername != null) profileUsername.setText("@" + aluno.getUsername());
 
-                                // Carregar FOTO com Glide
                                 if (aluno.getPhotoUrl() != null && !aluno.getPhotoUrl().isEmpty()) {
-                                    Glide.with(getContext())
-                                            .load(aluno.getPhotoUrl())
-                                            .circleCrop()
-                                            .into(profileAvatar);
+                                    if (getContext() != null) {
+                                        Glide.with(getContext())
+                                                .load(aluno.getPhotoUrl())
+                                                .circleCrop()
+                                                .into(profileAvatar);
+                                    }
                                 } else {
                                     profileAvatar.setImageResource(R.drawable.circle_bg);
                                 }
@@ -165,18 +182,23 @@ public class ProfileFragment extends Fragment {
                         postList.clear();
                         for (DocumentSnapshot doc : value.getDocuments()) {
                             Post post = doc.toObject(Post.class);
-                            post.setPostId(doc.getId());
-                            postList.add(post);
+                            if (post != null) {
+                                post.setPostId(doc.getId());
+                                postList.add(post);
+                            }
                         }
                         postAdapter.notifyDataSetChanged();
 
-                        if (postList.isEmpty()) {
+                        // Lógica para mostrar/esconder view vazia (se tiveres no XML)
+                        /*
+                        if (postList.isEmpty() && emptyView != null) {
                             recyclerView.setVisibility(View.GONE);
                             emptyView.setVisibility(View.VISIBLE);
-                        } else {
+                        } else if (emptyView != null) {
                             recyclerView.setVisibility(View.VISIBLE);
                             emptyView.setVisibility(View.GONE);
                         }
+                        */
                     }
                 });
     }

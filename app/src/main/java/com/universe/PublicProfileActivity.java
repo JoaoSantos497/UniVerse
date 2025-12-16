@@ -1,185 +1,207 @@
 package com.universe;
 
+import android.content.Intent; // <--- Importante
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView; // <--- IMPORTANTE: Tens de ter isto
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide; // <--- IMPORTANTE: Tens de ter isto
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 public class PublicProfileActivity extends AppCompatActivity {
 
-    // 1. MUDANÇA: Agora é ImageView (antes era TextView txtAvatar)
-    private ImageView imgAvatar;
-
-    private TextView txtName, txtUsername, txtCourse, txtUni;
-    private TextView txtFollowersCount, txtFollowingCount;
-    private Button btnBack, btnFollow;
-
-    private RecyclerView recyclerView;
-    private PostAdapter postAdapter;
-    private List<Post> postList;
+    private ImageView imgProfile;
+    private TextView txtName, txtCourse, txtFollowers, txtFollowing;
+    private Button btnFollow;
 
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    private String targetUserId;
-    private String currentUserId;
-    private boolean isFollowing = false;
+    private String targetUserId; // O ID da pessoa que estamos a ver
+    private String currentUserId; // O meu ID
+    private boolean isFollowing = false; // Estado atual (Sigo ou não?)
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_public_profile);
 
-        db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
-        currentUserId = mAuth.getCurrentUser().getUid();
-
-        // 2. MUDANÇA: Ligar ao ID do XML
-        imgAvatar = findViewById(R.id.publicProfileAvatar);
-
-        txtName = findViewById(R.id.publicProfileName);
-        txtUsername = findViewById(R.id.publicProfileUsername);
-        txtCourse = findViewById(R.id.publicProfileCourse);
-        txtUni = findViewById(R.id.publicProfileUni);
-        txtFollowersCount = findViewById(R.id.txtFollowersCount);
-        txtFollowingCount = findViewById(R.id.txtFollowingCount);
-        btnBack = findViewById(R.id.btnBack);
-        btnFollow = findViewById(R.id.btnFollow);
-
-        recyclerView = findViewById(R.id.recyclerProfilePosts);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        postList = new ArrayList<>();
-        postAdapter = new PostAdapter(postList);
-        recyclerView.setAdapter(postAdapter);
-
-        // Receber o ID da pessoa que queremos ver
+        // 1. Receber ID do utilizador alvo
         targetUserId = getIntent().getStringExtra("targetUserId");
 
-        if (targetUserId != null) {
-            if (targetUserId.equals(currentUserId)) {
-                btnFollow.setVisibility(View.GONE);
-            } else {
-                verificarSeJaSegue();
-            }
-
-            carregarDadosPerfil(targetUserId);
-            carregarPostsDoUtilizador(targetUserId);
-            carregarContadores();
+        if (targetUserId == null) {
+            Toast.makeText(this, "Erro: Utilizador não encontrado", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
-        btnBack.setOnClickListener(v -> finish());
+        // 2. Inicializar Firebase
+        db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
-        btnFollow.setOnClickListener(v -> {
-            if (isFollowing) {
-                deixarDeSeguir();
-            } else {
-                comecarASeguir();
-            }
-        });
+        if (mAuth.getCurrentUser() != null) {
+            currentUserId = mAuth.getCurrentUser().getUid();
+        }
+
+        // 3. Ligar UI
+        imgProfile = findViewById(R.id.publicProfileImage);
+        txtName = findViewById(R.id.publicProfileName);
+        txtCourse = findViewById(R.id.publicProfileCourse);
+        txtFollowers = findViewById(R.id.publicFollowersCount);
+        txtFollowing = findViewById(R.id.publicFollowingCount);
+        btnFollow = findViewById(R.id.btnFollowProfile);
+
+        // 4. Carregar Dados do Perfil
+        carregarDadosPerfil();
+
+        // 5. Verificar se é o próprio utilizador
+        if (currentUserId != null && currentUserId.equals(targetUserId)) {
+            // Se estou a ver o meu próprio perfil, escondo o botão "Seguir"
+            btnFollow.setVisibility(View.GONE);
+        } else {
+            // Se for outra pessoa, verifico se já sigo
+            verificarSeJaSegue();
+
+            // Configurar clique do botão
+            btnFollow.setOnClickListener(v -> {
+                if (isFollowing) {
+                    deixarDeSeguir();
+                } else {
+                    seguirUtilizador();
+                }
+            });
+        }
+
+        // 6. Contar Seguidores e A Seguir (Em tempo real)
+        contarSeguidoresESeguindo();
+
+        // --- 7. CONFIGURAR CLIQUES PARA ABRIR LISTAS (AGORA NO SÍTIO CERTO) ---
+
+        // Clique no número de seguidores
+        txtFollowers.setOnClickListener(v -> abrirLista("followers"));
+        // Clique na caixa toda (pai) dos seguidores
+        ((View) txtFollowers.getParent()).setOnClickListener(v -> abrirLista("followers"));
+
+        // Clique no número de A Seguir
+        txtFollowing.setOnClickListener(v -> abrirLista("following"));
+        // Clique na caixa toda (pai) do A Seguir
+        ((View) txtFollowing.getParent()).setOnClickListener(v -> abrirLista("following"));
     }
 
-    private void verificarSeJaSegue() {
-        db.collection("users").document(currentUserId)
-                .collection("following").document(targetUserId)
-                .addSnapshotListener((documentSnapshot, e) -> {
-                    if (documentSnapshot != null && documentSnapshot.exists()) {
-                        isFollowing = true;
-                        btnFollow.setText("A Seguir");
-                        btnFollow.setBackgroundColor(Color.GRAY);
-                    } else {
-                        isFollowing = false;
-                        btnFollow.setText("Seguir");
-                        btnFollow.setBackgroundColor(Color.parseColor("#6200EE"));
-                    }
-                });
+    // --- MÉTODO QUE FALTAVA ---
+    private void abrirLista(String type) {
+        Intent intent = new Intent(this, UserListActivity.class);
+        intent.putExtra("userId", targetUserId); // ID da pessoa que estamos a ver
+        intent.putExtra("type", type); // "followers" ou "following"
+        startActivity(intent);
     }
 
-    private void comecarASeguir() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("timestamp", System.currentTimeMillis());
-        db.collection("users").document(currentUserId)
-                .collection("following").document(targetUserId).set(data);
-        db.collection("users").document(targetUserId)
-                .collection("followers").document(currentUserId).set(data);
-    }
-
-    private void deixarDeSeguir() {
-        db.collection("users").document(currentUserId)
-                .collection("following").document(targetUserId).delete();
-        db.collection("users").document(targetUserId)
-                .collection("followers").document(currentUserId).delete();
-    }
-
-    private void carregarContadores() {
-        db.collection("users").document(targetUserId).collection("followers")
-                .addSnapshotListener((value, error) -> {
-                    if (value != null) txtFollowersCount.setText(String.valueOf(value.size()));
-                });
-        db.collection("users").document(targetUserId).collection("following")
-                .addSnapshotListener((value, error) -> {
-                    if (value != null) txtFollowingCount.setText(String.valueOf(value.size()));
-                });
-    }
-
-    private void carregarDadosPerfil(String uid) {
-        db.collection("users").document(uid).get()
+    private void carregarDadosPerfil() {
+        db.collection("users").document(targetUserId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
                             txtName.setText(user.getNome());
                             txtCourse.setText(user.getCurso());
-                            txtUni.setText(user.getUniversidade());
 
-                            if (user.getUsername() != null && !user.getUsername().isEmpty()) {
-                                txtUsername.setText("@" + user.getUsername());
-                            } else {
-                                txtUsername.setText("");
-                            }
-
-                            // 3. MUDANÇA: Carregar foto com GLIDE
                             if (user.getPhotoUrl() != null && !user.getPhotoUrl().isEmpty()) {
-                                Glide.with(this)
-                                        .load(user.getPhotoUrl())
-                                        .circleCrop()
-                                        .into(imgAvatar);
-                            } else {
-                                imgAvatar.setImageResource(R.drawable.circle_bg);
+                                Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(imgProfile);
                             }
                         }
                     }
                 });
     }
 
-    private void carregarPostsDoUtilizador(String uid) {
-        db.collection("posts")
-                .whereEqualTo("userId", uid)
-                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    postList.clear();
-                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                        Post post = doc.toObject(Post.class);
-                        post.setPostId(doc.getId());
-                        postList.add(post);
+    // --- LÓGICA DO FOLLOW SYSTEM ---
+
+    private void verificarSeJaSegue() {
+        // Verifica na MINHA lista de 'following' se o targetUserId está lá
+        db.collection("users").document(currentUserId)
+                .collection("following").document(targetUserId)
+                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable DocumentSnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) return;
+
+                        if (value != null && value.exists()) {
+                            // JÁ SIGO
+                            isFollowing = true;
+                            btnFollow.setText("A Seguir");
+                            btnFollow.setBackgroundColor(Color.GRAY); // Botão cinzento
+                            btnFollow.setTextColor(Color.BLACK);
+                        } else {
+                            // NÃO SIGO
+                            isFollowing = false;
+                            btnFollow.setText("Seguir");
+                            btnFollow.setBackgroundColor(Color.parseColor("#6200EE")); // Botão Roxo
+                            btnFollow.setTextColor(Color.WHITE);
+                        }
                     }
-                    postAdapter.notifyDataSetChanged();
+                });
+    }
+
+    private void seguirUtilizador() {
+        // Mapa vazio só para criar o documento
+        Map<String, Object> dados = new HashMap<>();
+
+        // 1. Adicionar à minha lista de "Following"
+        db.collection("users").document(currentUserId)
+                .collection("following").document(targetUserId)
+                .set(dados);
+
+        // 2. Adicionar à lista de "Followers" dele
+        db.collection("users").document(targetUserId)
+                .collection("followers").document(currentUserId)
+                .set(dados);
+
+        Toast.makeText(this, "A seguir!", Toast.LENGTH_SHORT).show();
+    }
+
+    private void deixarDeSeguir() {
+        // 1. Remover da minha lista "Following"
+        db.collection("users").document(currentUserId)
+                .collection("following").document(targetUserId)
+                .delete();
+
+        // 2. Remover da lista "Followers" dele
+        db.collection("users").document(targetUserId)
+                .collection("followers").document(currentUserId)
+                .delete();
+
+        Toast.makeText(this, "Deixaste de seguir.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void contarSeguidoresESeguindo() {
+        // Contar quantos Seguidores ele tem
+        db.collection("users").document(targetUserId).collection("followers")
+                .addSnapshotListener((value, error) -> {
+                    if (value != null) {
+                        txtFollowers.setText(String.valueOf(value.size()));
+                    }
+                });
+
+        // Contar quantos ele está A Seguir
+        db.collection("users").document(targetUserId).collection("following")
+                .addSnapshotListener((value, error) -> {
+                    if (value != null) {
+                        txtFollowing.setText(String.valueOf(value.size()));
+                    }
                 });
     }
 }
