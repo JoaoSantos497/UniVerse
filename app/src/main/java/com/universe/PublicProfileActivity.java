@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -66,6 +67,11 @@ public class PublicProfileActivity extends AppCompatActivity {
         txtFollowers = findViewById(R.id.publicFollowersCount);
         txtFollowing = findViewById(R.id.publicFollowingCount);
         btnFollow = findViewById(R.id.btnFollowProfile);
+
+
+        // Btn Voltar
+        ImageButton btnBack = findViewById(R.id.btnBackComments);
+        btnBack.setOnClickListener(v -> finish());
 
         // 4. Carregar Dados do Perfil
         carregarDadosPerfil();

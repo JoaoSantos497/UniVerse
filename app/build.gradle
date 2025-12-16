@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.glide)
     implementation(libs.swiperefreshlayout.v110)
+    implementation("com.vanniktech:android-image-cropper:4.5.0")
 
 
 }

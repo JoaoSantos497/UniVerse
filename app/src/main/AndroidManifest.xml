@@ -25,6 +25,13 @@
             </intent-filter>
         </activity>
 
+
+        <activity
+            android:name="com.canhub.cropper.CropImageActivity"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+            android:exported="true"
+            tools:replace="android:theme, android:exported" />
+
         <activity
             android:name=".MainActivity"
             android:exported="false" />
@@ -35,10 +42,6 @@
         <activity
             android:name=".ForgotPasswordActivity"
             android:exported="false" />
-        <activity
-            android:name=".SplashActivity"
-            android:exported="false" />
-
         <activity
             android:name=".CreatePostActivity"
             android:exported="false" />
