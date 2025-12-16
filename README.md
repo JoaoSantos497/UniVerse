@@ -71,12 +71,11 @@ Para testar a aplicação no teu dispositivo ou emulador:
 3.  **Compilar:**
     * Abre o projeto no Android Studio e deixa o Gradle sincronizar.
     * Executa a app (`Shift + F10`).
-
 ---
 
 ## 🔮 Roadmap (Futuro)
 
-* [ ] Implementação de partilha de fotos no Feed.
+* [ ] Comunidade Académica com outras universadades (ESES, ESA, ESS, ESDRM
 * [ ] Sistema de notificações Push.
 * [ ] Chat privado (Direct Messages).
 
