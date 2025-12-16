@@ -44,15 +44,15 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private FirebaseStorage storage; // <--- Novo
+    private FirebaseStorage storage;
 
-    private Uri selectedImageUri = null; // Guarda o endereço da imagem escolhida
-    private ActivityResultLauncher<String> mGetContent; // Lançador da galeria
+    private Uri selectedImageUri = null;
+    private ActivityResultLauncher<String> mGetContent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_create_post); // Confirma se o teu XML tem este nome
+        setContentView(R.layout.activity_create_post);
 
         // Inicializar Firebase
         mAuth = FirebaseAuth.getInstance();
