@@ -64,10 +64,14 @@ public class CreatePostActivity extends AppCompatActivity {
         btnPublish = findViewById(R.id.btnPublish);
 
         // Novos componentes do XML
+        ImageButton btnBack = findViewById(R.id.btnBackSettings);
         btnSelectPhoto = findViewById(R.id.btnSelectPhoto);
         imagePreviewContainer = findViewById(R.id.imagePreviewContainer);
         imagePreview = findViewById(R.id.imagePreview);
         btnRemoveImage = findViewById(R.id.btnRemoveImage);
+
+        // Botão Voltar
+        btnBack.setOnClickListener(v -> finish());
 
         // --- 1. CONFIGURAR A GALERIA ---
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(),
