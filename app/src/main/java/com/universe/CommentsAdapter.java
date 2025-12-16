@@ -1,7 +1,7 @@
 package com.universe;
 
 import android.content.Context;
-import android.content.Intent; // Importante
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,8 +22,24 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
     private FirebaseFirestore db;
     private Context context;
 
+    // 1. Interface para comunicar o clique à Activity
+    public interface OnReplyListener {
+        void onReplyClick(String username);
+    }
+
+    private OnReplyListener replyListener;
+
+    // 2. Construtor ATUALIZADO (Recebe a lista E o listener)
+    public CommentsAdapter(List<Comment> commentList, OnReplyListener listener) {
+        this.commentList = commentList;
+        this.replyListener = listener; // Guardamos o listener
+        this.db = FirebaseFirestore.getInstance();
+    }
+
+    // Construtor antigo (caso precises para compatibilidade, mas o erro vai desaparecer com o de cima)
     public CommentsAdapter(List<Comment> commentList) {
         this.commentList = commentList;
+        this.replyListener = null;
         this.db = FirebaseFirestore.getInstance();
     }
 
@@ -31,6 +47,7 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
     @Override
     public CommentViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         context = parent.getContext();
+        // Certifica-te que o layout se chama item_comment
         View view = LayoutInflater.from(context).inflate(R.layout.item_comment, parent, false);
         return new CommentViewHolder(view);
     }
@@ -49,29 +66,21 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
                 android.text.format.DateUtils.MINUTE_IN_MILLIS);
         holder.date.setText(relativeTime);
 
-        // --- 3. IMAGEM ANEXADA ---
+        // Imagem Anexada
         if (comment.getCommentImageUrl() != null && !comment.getCommentImageUrl().isEmpty()) {
             holder.attachedImage.setVisibility(View.VISIBLE);
+            Glide.with(context).load(comment.getCommentImageUrl()).into(holder.attachedImage);
 
-            Glide.with(context)
-                    .load(comment.getCommentImageUrl())
-                    .into(holder.attachedImage);
-
-            // --- NOVO: CLIQUE PARA ABRIR EM ECRÃ INTEIRO ---
             holder.attachedImage.setOnClickListener(v -> {
                 Intent intent = new Intent(context, FullScreenImageActivity.class);
                 intent.putExtra("imageUrl", comment.getCommentImageUrl());
                 context.startActivity(intent);
             });
-            // -----------------------------------------------
-
         } else {
             holder.attachedImage.setVisibility(View.GONE);
-            // Remove o listener para evitar cliques em áreas vazias
-            holder.attachedImage.setOnClickListener(null);
         }
 
-        // --- 4. FOTO DE PERFIL ---
+        // Foto de Perfil
         if (comment.getUserId() != null) {
             db.collection("users").document(comment.getUserId()).get()
                     .addOnSuccessListener(documentSnapshot -> {
@@ -87,6 +96,16 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         } else {
             holder.imgProfile.setImageResource(R.drawable.circle_bg);
         }
+
+        // 3. CLIQUE NO BOTÃO RESPONDER
+        // Se definimos um listener, ativamos o clique
+        if (holder.btnReply != null) {
+            holder.btnReply.setOnClickListener(v -> {
+                if (replyListener != null) {
+                    replyListener.onReplyClick(comment.getUserName());
+                }
+            });
+        }
     }
 
     @Override
@@ -98,6 +117,7 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         TextView userName, content, date;
         ImageView imgProfile;
         ImageView attachedImage;
+        TextView btnReply; // <--- O botão de responder no XML
 
         public CommentViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -106,6 +126,9 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
             date = itemView.findViewById(R.id.commentDate);
             imgProfile = itemView.findViewById(R.id.commentProfileImage);
             attachedImage = itemView.findViewById(R.id.commentAttachedImage);
+
+            // Certifica-te que adicionaste este ID ao teu item_comment.xml
+            btnReply = itemView.findViewById(R.id.btnReplyItem);
         }
     }
 }
