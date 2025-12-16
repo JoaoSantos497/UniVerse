@@ -1,5 +1,6 @@
 package com.universe;
 
+import android.app.AlertDialog; // Importante
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -9,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast; // Importante
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,9 +20,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.HashMap; // Importante
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;     // Importante
+import java.util.Map;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
@@ -129,7 +131,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 db.collection("posts").document(post.getPostId())
                         .update("likes", FieldValue.arrayUnion(currentUserId));
 
-                // --- NOVO: ENVIAR NOTIFICAÇÃO ---
+                // Enviar Notificação
                 enviarNotificacaoLike(post.getUserId(), post.getPostId());
             }
         });
@@ -151,14 +153,25 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             context.startActivity(intent);
         });
 
-        // --- 8. LÓGICA DE APAGAR ---
+        // --- 8. LÓGICA DE APAGAR (Com Confirmação) ---
         if (post.getUserId() != null && post.getUserId().equals(currentUserId)) {
             holder.btnDelete.setVisibility(View.VISIBLE);
+
             holder.btnDelete.setOnClickListener(v -> {
-                if (post.getPostId() != null) {
-                    db.collection("posts").document(post.getPostId()).delete();
-                }
+                // MOSTRAR ALERT DIALOG
+                new AlertDialog.Builder(context)
+                        .setTitle("Eliminar Post")
+                        .setMessage("Tens a certeza que queres apagar este post permanentemente?")
+                        .setPositiveButton("Sim, apagar", (dialog, which) -> {
+                            // Se o utilizador confirmar, chama a função de apagar
+                            apagarPostDoFirebase(post.getPostId(), position);
+                        })
+                        .setNegativeButton("Cancelar", (dialog, which) -> {
+                            dialog.dismiss(); // Fecha a janela
+                        })
+                        .show();
             });
+
         } else {
             holder.btnDelete.setVisibility(View.GONE);
         }
@@ -169,21 +182,37 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         return postList.size();
     }
 
-    // --- NOVO MÉTODO AUXILIAR PARA NOTIFICAÇÕES ---
+    // --- NOVO METODO PARA APAGAR DO FIREBASE ---
+    private void apagarPostDoFirebase(String postId, int position) {
+        if (postId == null) return;
+
+        db.collection("posts").document(postId).delete()
+                .addOnSuccessListener(aVoid -> {
+                    // Remover da lista local para atualizar visualmente
+                    if (position >= 0 && position < postList.size()) {
+                        postList.remove(position);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, postList.size());
+                    }
+                    Toast.makeText(context, "Post eliminado com sucesso.", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(context, "Erro ao eliminar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    // --- METODO DE NOTIFICAÇÕES (Mantido) ---
     private void enviarNotificacaoLike(String donoDoPostId, String postId) {
-        // Se eu der like no meu próprio post, não envia notificação
         if (donoDoPostId.equals(currentUserId)) return;
 
-        // Vamos buscar os meus dados (quem deu o like) para por na notificação
         db.collection("users").document(currentUserId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         User eu = documentSnapshot.toObject(User.class);
                         if (eu != null) {
-                            // Criar os dados da notificação
                             Map<String, Object> notifMap = new HashMap<>();
-                            notifMap.put("targetUserId", donoDoPostId); // Para quem vai
-                            notifMap.put("fromUserId", currentUserId);  // Quem fez
+                            notifMap.put("targetUserId", donoDoPostId);
+                            notifMap.put("fromUserId", currentUserId);
                             notifMap.put("fromUserName", eu.getNome());
                             notifMap.put("fromUserPhoto", eu.getPhotoUrl());
                             notifMap.put("type", "like");
@@ -191,7 +220,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                             notifMap.put("postId", postId);
                             notifMap.put("timestamp", System.currentTimeMillis());
 
-                            // Gravar na coleção 'notifications'
+                            // Adicionar campo read para o badge funcionar
+                            notifMap.put("read", false);
+
                             db.collection("notifications").add(notifMap);
                         }
                     }

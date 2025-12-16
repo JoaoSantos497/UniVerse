@@ -195,7 +195,7 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    // Método da Bolinha Vermelha (Caso tenhas a View notificationBadge no XML)
+    // Metodo da Bolinha Vermelha (Caso tenhas a View notificationBadge no XML)
     private void verificarNotificacoesNaoLidas() {
         if (mAuth.getCurrentUser() == null || notificationBadge == null) return;
         String myId = mAuth.getCurrentUser().getUid();
