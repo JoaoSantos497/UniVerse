@@ -10,6 +10,9 @@ public class User {
     private String photoUrl;
     private long ultimaTrocaUsername;
 
+    // --- NOVO CAMPO ---
+    private String universityDomain; // ex: "ips.pt"
+
     // Construtor padrão (Obrigatório para o Firebase)
     public User() {}
 
@@ -22,12 +25,19 @@ public class User {
         this.curso = curso;
         this.universidade = universidade;
         this.ultimaTrocaUsername = 0;
+
+        // Lógica para extrair o domínio automaticamente do email
+        if (email != null && email.contains("@")) {
+            this.universityDomain = email.substring(email.indexOf("@") + 1);
+        } else {
+            this.universityDomain = "geral";
+        }
     }
 
     // --- GETTERS E SETTERS ---
 
     public String getUid() { return uid; }
-    public void setUid(String uid) { this.uid = uid; } // RESOLVE O ERRO DO SEARCH
+    public void setUid(String uid) { this.uid = uid; }
 
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
@@ -47,4 +57,8 @@ public class User {
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 
     public long getUltimaTrocaUsername() { return ultimaTrocaUsername; }
+
+    // --- NOVOS GETTERS E SETTERS PARA O DOMÍNIO ---
+    public String getUniversityDomain() { return universityDomain; }
+    public void setUniversityDomain(String universityDomain) { this.universityDomain = universityDomain; }
 }

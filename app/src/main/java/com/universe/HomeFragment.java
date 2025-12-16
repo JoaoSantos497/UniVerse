@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton; // Importante
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,11 +16,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.ListenerRegistration; // Importante
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -34,10 +36,18 @@ public class HomeFragment extends Fragment {
     private List<Post> postList;
     private FloatingActionButton fabCreatePost;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private ImageButton btnNotifications; // <--- Variável global
+    private ImageButton btnNotifications;
+    private TabLayout tabLayout;
+
+    // Badge de Notificação
+    private View notificationBadge;
+    private ListenerRegistration badgeListener;
 
     private FirebaseFirestore db;
-    private ListenerRegistration postListener; // <--- Para controlar a ligação ao Firebase
+    private FirebaseAuth mAuth;
+    private ListenerRegistration postListener;
+
+    private String myDomain = ""; // Guarda o domínio da universidade (ex: ips.pt)
 
     @Nullable
     @Override
@@ -45,12 +55,17 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
         // 1. Ligar componentes
         recyclerView = view.findViewById(R.id.recyclerViewPosts);
         fabCreatePost = view.findViewById(R.id.fabCreatePost);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
-        btnNotifications = view.findViewById(R.id.btnNotifications); // <--- Ligar ID
+        btnNotifications = view.findViewById(R.id.btnNotifications);
+        tabLayout = view.findViewById(R.id.tabLayoutFeed);
+
+        // Se já implementaste a bolinha vermelha:
+        notificationBadge = view.findViewById(R.id.notificationBadge);
 
         // 2. Configurar Lista
         recyclerView.setHasFixedSize(true);
@@ -59,54 +74,108 @@ public class HomeFragment extends Fragment {
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        // 3. Ação do Botão Criar Post
+        // 3. Descobrir o meu Domínio
+        if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
+            String email = mAuth.getCurrentUser().getEmail();
+            if (email.contains("@")) {
+                myDomain = email.substring(email.indexOf("@") + 1);
+            }
+        }
+
+        // 4. Configurar as Abas
+        tabLayout.addTab(tabLayout.newTab().setText("Global"));
+        tabLayout.addTab(tabLayout.newTab().setText("Minha Uni"));
+
+        // Listener para quando mudamos de aba
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                if (tab.getPosition() == 0) {
+                    carregarPosts("global");
+                } else {
+                    carregarPosts("uni");
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {}
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                recyclerView.smoothScrollToPosition(0);
+                if (tab.getPosition() == 0) carregarPosts("global");
+                else carregarPosts("uni");
+            }
+        });
+
+        // 5. Botões
         fabCreatePost.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), CreatePostActivity.class);
+            // Enviar a aba selecionada para o CreatePost saber se é Global ou Uni
+            int currentTab = tabLayout.getSelectedTabPosition();
+            intent.putExtra("selectedTab", currentTab);
             startActivity(intent);
         });
 
-        // 4. Ação do Botão Notificações
         btnNotifications.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), NotificationsActivity.class);
             startActivity(intent);
         });
 
-        // 5. Lógica do Swipe to Refresh
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                carregarPosts();
+        // 6. Swipe to Refresh
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            if (tabLayout.getSelectedTabPosition() == 0) {
+                carregarPosts("global");
+            } else {
+                carregarPosts("uni");
             }
         });
 
-        // 6. Carregar Posts ao iniciar
-        carregarPosts();
+        // 7. Badge de Notificações (Se implementaste a bolinha)
+        verificarNotificacoesNaoLidas();
+
+        // Carregar Global ao iniciar
+        carregarPosts("global");
 
         return view;
     }
 
-    private void carregarPosts() {
-        // Se já existir um listener ativo, removemos antes de criar um novo
-        // Isto evita que a app fique lenta ou leia dados duplicados
+    private void carregarPosts(String tipo) {
         if (postListener != null) {
             postListener.remove();
         }
 
-        Query query = db.collection("posts")
-                .orderBy("timestamp", Query.Direction.DESCENDING);
+        swipeRefreshLayout.setRefreshing(true);
+
+        Query query;
+
+        if (tipo.equals("global")) {
+            // GLOBAL: Apenas mostra posts com postType="global"
+            // (Requer índice: postType + timestamp)
+            query = db.collection("posts")
+                    .whereEqualTo("postType", "global")
+                    .orderBy("timestamp", Query.Direction.DESCENDING);
+        } else {
+            // MINHA UNI: Apenas mostra posts com postType="uni" E do meu domínio
+            // (Requer índice: universityDomain + postType + timestamp)
+            query = db.collection("posts")
+                    .whereEqualTo("universityDomain", myDomain)
+                    .whereEqualTo("postType", "uni") // <--- SEPARAÇÃO TOTAL AQUI
+                    .orderBy("timestamp", Query.Direction.DESCENDING);
+        }
 
         postListener = query.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
 
-                // Parar a animação de refresh se estiver ativa
                 if (swipeRefreshLayout != null) {
                     swipeRefreshLayout.setRefreshing(false);
                 }
 
                 if (error != null) {
                     if (getContext() != null) {
-                        Toast.makeText(getContext(), "Erro ao atualizar: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        // Se aparecer este erro, clica no link azul no Logcat!
+                        Toast.makeText(getContext(), "Índice necessário: verifica o Logcat", Toast.LENGTH_LONG).show();
                     }
                     return;
                 }
@@ -116,7 +185,7 @@ public class HomeFragment extends Fragment {
                     for (DocumentSnapshot doc : value.getDocuments()) {
                         Post post = doc.toObject(Post.class);
                         if (post != null) {
-                            post.setPostId(doc.getId()); // Fundamental para os likes funcionarem
+                            post.setPostId(doc.getId());
                             postList.add(post);
                         }
                     }
@@ -126,12 +195,28 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    // Boa prática: Parar de escutar o Firebase quando o utilizador sai deste ecrã
+    // Método da Bolinha Vermelha (Caso tenhas a View notificationBadge no XML)
+    private void verificarNotificacoesNaoLidas() {
+        if (mAuth.getCurrentUser() == null || notificationBadge == null) return;
+        String myId = mAuth.getCurrentUser().getUid();
+
+        badgeListener = db.collection("notifications")
+                .whereEqualTo("targetUserId", myId)
+                .whereEqualTo("read", false)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) return;
+                    if (value != null && !value.isEmpty()) {
+                        notificationBadge.setVisibility(View.VISIBLE);
+                    } else {
+                        notificationBadge.setVisibility(View.GONE);
+                    }
+                });
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (postListener != null) {
-            postListener.remove();
-        }
+        if (postListener != null) postListener.remove();
+        if (badgeListener != null) badgeListener.remove();
     }
 }

@@ -14,18 +14,12 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -63,7 +57,7 @@ public class CreatePostActivity extends AppCompatActivity {
         inputPostContent = findViewById(R.id.inputPostContent);
         btnPublish = findViewById(R.id.btnPublish);
 
-        // Novos componentes do XML
+        // Componentes do XML
         ImageButton btnBack = findViewById(R.id.btnBackSettings);
         btnSelectPhoto = findViewById(R.id.btnSelectPhoto);
         imagePreviewContainer = findViewById(R.id.imagePreviewContainer);
@@ -122,15 +116,15 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void fazerUploadImagem(String content) {
+        if (mAuth.getCurrentUser() == null) return;
+
         String uid = mAuth.getCurrentUser().getUid();
-        // Nome único para a imagem: posts/ID_USER/UUID.jpg
         String fileName = "post_images/" + uid + "/" + UUID.randomUUID().toString() + ".jpg";
 
         StorageReference ref = storage.getReference().child(fileName);
 
         ref.putFile(selectedImageUri)
                 .addOnSuccessListener(taskSnapshot -> {
-                    // Upload sucesso, agora pegar o link
                     ref.getDownloadUrl().addOnSuccessListener(uri -> {
                         String downloadUrl = uri.toString();
                         buscarDadosUsuarioEGuardar(content, downloadUrl);
@@ -144,7 +138,29 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void buscarDadosUsuarioEGuardar(String content, String imageUrl) {
+        if (mAuth.getCurrentUser() == null) return;
+
         String uid = mAuth.getCurrentUser().getUid();
+        String email = mAuth.getCurrentUser().getEmail();
+
+        // --- 1. EXTRAIR DOMÍNIO DA UNIVERSIDADE ---
+        String dominioTemp = "geral";
+        if (email != null && email.contains("@")) {
+            dominioTemp = email.substring(email.indexOf("@") + 1);
+        }
+        final String universityDomain = dominioTemp;
+
+        // --- 2. RECEBER O TIPO DE POST (VEM DO HOMEFRAGMENT) ---
+        // 0 = Global, 1 = Minha Uni
+        int selectedTab = getIntent().getIntExtra("selectedTab", 0);
+        String type;
+        if (selectedTab == 1) {
+            type = "uni";
+        } else {
+            type = "global";
+        }
+        final String postTypeFinal = type;
+        // -------------------------------------------------------
 
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -155,14 +171,16 @@ public class CreatePostActivity extends AppCompatActivity {
                         long timestamp = System.currentTimeMillis();
                         String nomeAutor = (user != null && user.getNome() != null) ? user.getNome() : "Anónimo";
 
-                        // --- ATENÇÃO: PRECISAS DE ATUALIZAR O POST.JAVA PARA ESTE CONSTRUTOR ---
+                        // --- 3. CRIAR POST COM TODOS OS DADOS ---
                         Post novoPost = new Post(
                                 uid,
                                 nomeAutor,
                                 content,
                                 dataHora,
                                 timestamp,
-                                imageUrl
+                                imageUrl,
+                                universityDomain,
+                                postTypeFinal
                         );
 
                         guardarNoFirestore(novoPost);
@@ -183,8 +201,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private void guardarNoFirestore(Post post) {
         db.collection("posts").add(post)
                 .addOnSuccessListener(documentReference -> {
-                    // ATUALIZAR O ID DO POST NO DOCUMENTO
-                    // Isto ajuda depois para apagar/editar o post mais facilmente
+                    // Atualizar o ID do post no documento
                     String postId = documentReference.getId();
                     documentReference.update("postId", postId);
 

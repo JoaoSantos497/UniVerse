@@ -1,7 +1,9 @@
 package com.universe;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,10 +26,14 @@ public class NotificationsActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
+    // --- NOVO ---
+    private LinearLayout emptyView;
+    private TextView txtEmptyMessage;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_user_list); // Reutilizamos este layout!
+        setContentView(R.layout.activity_user_list);
 
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
@@ -36,7 +42,12 @@ public class NotificationsActivity extends AppCompatActivity {
         ImageButton btnBack = findViewById(R.id.btnBackUserList);
         TextView title = findViewById(R.id.txtUserListTitle);
 
+        // Ligar os novos componentes
+        emptyView = findViewById(R.id.emptyView);
+        txtEmptyMessage = findViewById(R.id.txtEmptyMessage);
+
         title.setText("Notificações");
+        txtEmptyMessage.setText("Ainda não tens notificações."); // Personalizar mensagem
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -53,9 +64,11 @@ public class NotificationsActivity extends AppCompatActivity {
         String myId = mAuth.getCurrentUser().getUid();
 
         db.collection("notifications")
-                .whereEqualTo("targetUserId", myId) // Só as minhas
-                .orderBy("timestamp", Query.Direction.DESCENDING) // Mais recentes primeiro
+                .whereEqualTo("targetUserId", myId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
+                    if (error != null) return;
+
                     if (value != null) {
                         notificationList.clear();
                         for (DocumentSnapshot doc : value.getDocuments()) {
@@ -66,6 +79,15 @@ public class NotificationsActivity extends AppCompatActivity {
                             }
                         }
                         adapter.notifyDataSetChanged();
+
+                        // --- LÓGICA DO VAZIO ---
+                        if (notificationList.isEmpty()) {
+                            recyclerView.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.VISIBLE);
+                        } else {
+                            recyclerView.setVisibility(View.VISIBLE);
+                            emptyView.setVisibility(View.GONE);
+                        }
                     }
                 });
     }
