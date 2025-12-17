@@ -4,7 +4,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
     <LinearLayout
@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:background="#FFFFFF"
+        android:background="?android:attr/colorBackground"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -20,25 +20,21 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingBottom="16dp"
-        android:paddingTop="27dp">
-
-        <ImageButton
-            android:id="@+id/btnBackComments"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="#000000" />
-
-        <ImageView
-            android:id="@+id/publicProfileImage"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="12dp"
-            android:background="@drawable/circle_bg"
-            android:scaleType="centerCrop"
-            android:src="@drawable/circle_bg" />
+        android:paddingTop="27dp"> <ImageButton
+        android:id="@+id/btnBackComments"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_arrow_back"
+        app:tint="?android:attr/textColorPrimary" /> <ImageView
+        android:id="@+id/publicProfileImage"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/circle_bg"
+        android:scaleType="centerCrop"
+        android:src="@drawable/circle_bg" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -51,7 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Carregando..."
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -60,7 +56,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="..."
-                android:textColor="#757575"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -90,7 +86,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="vertical"
-        android:background="#FAFAFA"
+        android:background="?android:attr/colorBackground"
         android:elevation="16dp">
 
         <RelativeLayout
@@ -125,7 +121,7 @@
             android:id="@+id/commentImagePreviewContainer"
             android:layout_width="match_parent"
             android:layout_height="120dp"
-            android:background="#F0F0F0"
+            android:background="?android:attr/colorBackground"
             android:visibility="gone"
             android:padding="8dp">
 
@@ -164,6 +160,8 @@
                 android:hint="Escreve um comentário..."
                 android:background="@drawable/bg_search_outline"
                 android:padding="12dp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:hintTextColor="?android:attr/textColorSecondary"
                 android:layout_marginEnd="12dp"
                 android:maxLines="3"
                 android:inputType="textCapSentences"
@@ -176,7 +174,7 @@
                 android:src="@drawable/ic_attach_file"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Anexar Imagem"
-                app:tint="#6200EE"
+                app:tint="?attr/colorPrimary"
                 android:layout_marginEnd="8dp"/>
 
             <ImageButton
@@ -186,7 +184,7 @@
                 android:src="@android:drawable/ic_menu_send"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Enviar"
-                app:tint="#6200EE"/>
+                app:tint="?attr/colorPrimary"/>
         </LinearLayout>
     </LinearLayout>
 
