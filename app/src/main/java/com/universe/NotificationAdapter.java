@@ -2,7 +2,7 @@ package com.universe;
 
 import android.content.Context;
 import android.content.Intent;
-import android.text.Html;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,77 +16,73 @@ import com.bumptech.glide.Glide;
 
 import java.util.List;
 
-public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
+public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotifViewHolder> {
 
+    private List<Notification> list;
     private Context context;
-    private List<Notification> mNotifications;
 
-    public NotificationAdapter(Context context, List<Notification> mNotifications) {
-        this.context = context;
-        this.mNotifications = mNotifications;
+    public NotificationAdapter(List<Notification> list) {
+        this.list = list;
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_notification, parent, false);
-        return new ViewHolder(view);
+    public NotifViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        context = parent.getContext();
+        // Podes reutilizar o item_user.xml ou criar um item_notification.xml
+        View view = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false);
+        return new NotifViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Notification notif = mNotifications.get(position);
+    public void onBindViewHolder(@NonNull NotifViewHolder holder, int position) {
+        Notification n = list.get(position);
 
-        // Formatar texto: Nome a Negrito + Mensagem
-        String texto = "<b>" + notif.getFromUserName() + "</b> " + notif.getMessage();
-        holder.txtText.setText(Html.fromHtml(texto));
+        holder.txtMessage.setText(n.getMessage());
+        holder.txtName.setText(n.getFromUserName()); // Quem enviou
 
-        // Data
-        long now = System.currentTimeMillis();
-        CharSequence timeAgo = android.text.format.DateUtils.getRelativeTimeSpanString(
-                notif.getTimestamp(), now, android.text.format.DateUtils.MINUTE_IN_MILLIS);
-        holder.txtDate.setText(timeAgo);
-
-        // Foto
-        if (notif.getFromUserPhoto() != null && !notif.getFromUserPhoto().isEmpty()) {
-            Glide.with(context).load(notif.getFromUserPhoto()).circleCrop().into(holder.image);
+        // Se não foi lida, muda a cor de fundo (exemplo)
+        if (!n.isRead()) {
+            holder.itemView.setBackgroundColor(Color.parseColor("#E8EAF6")); // Azul muito claro
         } else {
-            holder.image.setImageResource(R.drawable.circle_bg);
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
         }
 
-        // CLIQUE NA NOTIFICAÇÃO
+        // Foto de quem enviou
+        if (n.getFromUserPhoto() != null && !n.getFromUserPhoto().isEmpty()) {
+            Glide.with(context).load(n.getFromUserPhoto()).circleCrop().into(holder.imgAvatar);
+        } else {
+            holder.imgAvatar.setImageResource(R.drawable.circle_bg);
+        }
+
+        // Clique: Se for like/comment vai para os comentários do post
         holder.itemView.setOnClickListener(v -> {
-            if (notif.getType().equals("follow")) {
-                // Vai para o perfil da pessoa
-                Intent intent = new Intent(context, PublicProfileActivity.class);
-                intent.putExtra("targetUserId", notif.getFromUserId());
+            if (n.getPostId() != null) {
+                Intent intent = new Intent(context, CommentsActivity.class);
+                intent.putExtra("postId", n.getPostId());
                 context.startActivity(intent);
-            }
-            else if (notif.getType().equals("like") || notif.getType().equals("comment")) {
-                // Vai para o post (usamos a CommentsActivity para ver o post e os comments)
-                if (notif.getPostId() != null) {
-                    Intent intent = new Intent(context, CommentsActivity.class);
-                    intent.putExtra("postId", notif.getPostId());
-                    context.startActivity(intent);
-                }
+            } else if (n.getType().equals("follow")) {
+                Intent intent = new Intent(context, PublicProfileActivity.class);
+                intent.putExtra("targetUserId", n.getFromUserId());
+                context.startActivity(intent);
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return mNotifications.size();
+        return list.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
-        public ImageView image;
-        public TextView txtText, txtDate;
+    public static class NotifViewHolder extends RecyclerView.ViewHolder {
+        ImageView imgAvatar;
+        TextView txtName, txtMessage; // Reutilizando IDs do item_user
 
-        public ViewHolder(@NonNull View itemView) {
+        public NotifViewHolder(@NonNull View itemView) {
             super(itemView);
-            image = itemView.findViewById(R.id.notifImage);
-            txtText = itemView.findViewById(R.id.notifText);
-            txtDate = itemView.findViewById(R.id.notifDate);
+            imgAvatar = itemView.findViewById(R.id.searchAvatar);
+            txtName = itemView.findViewById(R.id.searchName);
+            txtMessage = itemView.findViewById(R.id.searchUsername); // Usamos o campo username para a mensagem
         }
     }
 }

@@ -18,7 +18,7 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingBottom="16dp"
-        android:paddingTop="30dp">
+        android:paddingTop="15dp">
 
         <ImageButton
             android:id="@+id/btnBackSettings"
@@ -74,7 +74,35 @@
             android:text="Segurança"
             android:textSize="16sp"
             android:textColor="?android:attr/textColorPrimary"/>
+    </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/btnBlockedUsers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?android:attr/colorBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_person_filled"
+            android:layout_marginEnd="16dp"
+            android:alpha="0.8"
+            app:tint="?android:attr/textColorPrimary"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Utilizadores Bloqueados"
+            android:textSize="16sp"
+            android:textColor="?android:attr/textColorPrimary"/>
     </LinearLayout>
 
     <View

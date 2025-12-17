@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -23,51 +23,58 @@ public class NotificationsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private NotificationAdapter adapter;
     private List<Notification> notificationList;
+    private ImageButton btnBack;
+
+    // UI para estado vazio
+    private LinearLayout emptyView;
+    // Removi os TextViews (txtTitle, txtEmptyMessage) porque agora o XML já tem os textos certos!
+
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
-
-    // --- NOVO ---
-    private LinearLayout emptyView;
-    private TextView txtEmptyMessage;
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_user_list);
+
+        // --- ATUALIZAÇÃO 1: Usar o layout específico ---
+        setContentView(R.layout.activity_notifications);
 
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
-        recyclerView = findViewById(R.id.recyclerUserList);
-        ImageButton btnBack = findViewById(R.id.btnBackUserList);
-        TextView title = findViewById(R.id.txtUserListTitle);
+        if (mAuth.getCurrentUser() != null) {
+            currentUserId = mAuth.getCurrentUser().getUid();
+        } else {
+            finish();
+            return;
+        }
 
-        // Ligar os novos componentes
-        emptyView = findViewById(R.id.emptyView);
-        txtEmptyMessage = findViewById(R.id.txtEmptyMessage);
+        // --- ATUALIZAÇÃO 2: Usar os IDs corretos do activity_notifications.xml ---
+        recyclerView = findViewById(R.id.recyclerNotifications);
+        btnBack = findViewById(R.id.btnBackNotifications);
+        emptyView = findViewById(R.id.emptyViewNotifications);
 
-        title.setText("Notificações");
-        txtEmptyMessage.setText("Ainda não tens notificações."); // Personalizar mensagem
+        // Configurar Lista
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        notificationList = new ArrayList<>();
+        adapter = new NotificationAdapter(notificationList);
+        recyclerView.setAdapter(adapter);
 
         btnBack.setOnClickListener(v -> finish());
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        notificationList = new ArrayList<>();
-        adapter = new NotificationAdapter(this, notificationList);
-        recyclerView.setAdapter(adapter);
-
-        lerNotificacoes();
+        carregarNotificacoes();
     }
 
-    private void lerNotificacoes() {
-        if (mAuth.getCurrentUser() == null) return;
-        String myId = mAuth.getCurrentUser().getUid();
-
+    private void carregarNotificacoes() {
         db.collection("notifications")
-                .whereEqualTo("targetUserId", myId)
+                .whereEqualTo("targetUserId", currentUserId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
-                    if (error != null) return;
+                    if (error != null) {
+                        // Toast.makeText(this, "Erro ao carregar.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
                     if (value != null) {
                         notificationList.clear();
@@ -80,15 +87,25 @@ public class NotificationsActivity extends AppCompatActivity {
                         }
                         adapter.notifyDataSetChanged();
 
-                        // --- LÓGICA DO VAZIO ---
+                        // Gerir estado vazio
                         if (notificationList.isEmpty()) {
+                            if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
                             recyclerView.setVisibility(View.GONE);
-                            emptyView.setVisibility(View.VISIBLE);
                         } else {
+                            if (emptyView != null) emptyView.setVisibility(View.GONE);
                             recyclerView.setVisibility(View.VISIBLE);
-                            emptyView.setVisibility(View.GONE);
+                            marcarComoLidas();
                         }
                     }
                 });
+    }
+
+    private void marcarComoLidas() {
+        for (Notification n : notificationList) {
+            if (!n.isRead() && n.getNotificationId() != null) {
+                db.collection("notifications").document(n.getNotificationId())
+                        .update("read", true);
+            }
+        }
     }
 }

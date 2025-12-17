@@ -4,112 +4,209 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:paddingStart="24dp"
-    android:paddingEnd="24dp"
-    android:paddingBottom="24dp"
-    android:paddingTop="30dp"
     android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
-
-    <ImageButton
-        android:id="@+id/btnBackComments"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_arrow_back"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginBottom="10dp"
-        app:tint="?android:attr/textColorPrimary"
-        android:contentDescription="Voltar"/>
-
-    <ImageView
-        android:id="@+id/publicProfileImage"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@drawable/circle_bg"
-        android:background="@drawable/circle_bg"
-        android:scaleType="centerCrop"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:id="@+id/publicProfileName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Carregando..."
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_gravity="center_horizontal"/>
-
-    <TextView
-        android:id="@+id/publicProfileCourse"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="..."
-        android:textSize="16sp"
-        android:textColor="?android:attr/textColorSecondary"
-        android:layout_marginBottom="24dp"
-        android:layout_gravity="center_horizontal"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="24dp"
-        android:layout_gravity="center_horizontal">
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="30dp"
+        android:paddingBottom="16dp"
+        android:background="?android:attr/colorBackground"
+        android:elevation="4dp">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:layout_marginEnd="32dp">
-            <TextView
-                android:id="@+id/publicFollowersCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="?android:attr/textColorPrimary"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Seguidores"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textSize="12sp"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center">
-            <TextView
-                android:id="@+id/publicFollowingCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:textColor="?android:attr/textColorPrimary"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="A Seguir"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textSize="12sp"/>
-        </LinearLayout>
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/btnFollowProfile"
+        <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Seguir"
-        android:backgroundTint="?attr/colorPrimary"
-        android:textColor="?attr/colorOnPrimary"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_marginBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnBackPublic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="?android:attr/textColorPrimary"
+            android:contentDescription="Voltar"/>
+
+        <ImageButton
+            android:id="@+id/btnProfileOptions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:src="@drawable/ic_more_vert"
+
+            android:layout_alignParentEnd="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="?android:attr/textColorPrimary"
+            android:contentDescription="Opções"/>
+    </RelativeLayout>
+
+        <ImageView
+            android:id="@+id/publicProfileImage"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/circle_bg"
+            android:background="@drawable/circle_bg"
+            android:scaleType="centerCrop"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/publicProfileName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Carregando..."
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_gravity="center_horizontal"/>
+
+        <TextView
+            android:id="@+id/publicProfileCourse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="..."
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="4dp"
+            android:layout_gravity="center_horizontal"/>
+
+        <TextView
+            android:id="@+id/publicProfileUni"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Universidade..."
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginBottom="20dp"
+            android:layout_gravity="center_horizontal"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginEnd="40dp">
+                <TextView
+                    android:id="@+id/publicFollowersCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="?android:attr/textColorPrimary"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Seguidores"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center">
+                <TextView
+                    android:id="@+id/publicFollowingCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="?android:attr/textColorPrimary"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="A Seguir"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            style="?android:attr/buttonBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <Button
+                android:id="@+id/btnFollowProfile"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Seguir"
+                android:backgroundTint="?attr/colorPrimary"
+                android:textColor="?attr/colorOnPrimary"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btnMessageProfile"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mensagem"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="?attr/colorPrimary"
+                app:strokeColor="?attr/colorPrimary"/>
+        </LinearLayout>
+
+    </LinearLayout> <View
+    android:layout_width="match_parent"
+    android:layout_height="1dp"
+    android:background="?android:attr/listDivider"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Publicações"
+        android:padding="16dp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPublicPosts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"/>
+
+    <LinearLayout
+        android:id="@+id/emptyViewPublic"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_search"
+            android:alpha="0.3"
+            app:tint="?android:attr/textColorSecondary"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sem publicações ainda."
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
 
 </LinearLayout>
