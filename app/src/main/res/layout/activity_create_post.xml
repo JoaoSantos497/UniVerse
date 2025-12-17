@@ -57,80 +57,84 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/headerLayout"
-        android:layout_above="@id/bottomToolBar"> <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_above="@id/bottomToolBar">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <ImageView
-                android:id="@+id/currentUserImage"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:src="@drawable/circle_bg"
-                android:background="@drawable/circle_bg"
-                android:scaleType="centerCrop"/>
-
-            <TextView
-                android:id="@+id/currentUserName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="O teu nome"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginStart="12dp"
-                android:textColor="?android:attr/textColorPrimary"/>
-        </LinearLayout>
-
-        <EditText
-            android:id="@+id/inputPostContent"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:hint="O que estás a pensar?"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorSecondary"
-            android:gravity="top|start"
-            android:minLines="5"
-            android:textSize="18sp"
-            android:inputType="textMultiLine|textCapSentences"/>
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp">
-
-            <ImageView
-                android:id="@+id/imagePreview"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:maxHeight="300dp"
-                android:visibility="gone"
-                android:scaleType="centerCrop"
-                android:background="@drawable/bg_search_outline"/> <ImageButton
-            android:id="@+id/btnRemoveImage"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:background="@drawable/circle_bg"
-            android:backgroundTint="#D32F2F"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            app:tint="#FFFFFF"
-            android:visibility="gone"/>
-        </RelativeLayout>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
 
-    </LinearLayout>
+                <ImageView
+                    android:id="@+id/currentUserImage"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:src="@drawable/circle_bg"
+                    android:background="@drawable/circle_bg"
+                    android:scaleType="centerCrop"/>
+
+                <TextView
+                    android:id="@+id/currentUserName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="O teu nome"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="12dp"
+                    android:textColor="?android:attr/textColorPrimary"/>
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/inputPostContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:hint="O que estás a pensar?"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textColorHint="?android:attr/textColorSecondary"
+                android:gravity="top|start"
+                android:minLines="5"
+                android:textSize="18sp"
+                android:inputType="textMultiLine|textCapSentences"/>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp">
+
+                <ImageView
+                    android:id="@+id/imagePreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:maxHeight="300dp"
+                    android:visibility="gone"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/bg_search_outline"/>
+
+                <ImageButton
+                    android:id="@+id/btnRemoveImage"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    android:background="@drawable/circle_bg"
+                    android:backgroundTint="#D32F2F"
+                    android:layout_alignParentTop="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    app:tint="#FFFFFF"
+                    android:visibility="gone"/>
+            </RelativeLayout>
+
+        </LinearLayout>
     </ScrollView>
 
     <LinearLayout

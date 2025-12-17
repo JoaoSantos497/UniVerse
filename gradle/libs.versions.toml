@@ -1,6 +1,7 @@
 [versions]
 agp = "8.13.2"
-firebaseBom = "34.6.0"
+androidImageCropper = "4.7.0"
+firebaseBom = "34.7.0"
 firebaseFirestore = "26.0.2"
 glide = "5.0.5"
 junit = "4.13.2"
@@ -8,21 +9,21 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 appcompat = "1.7.1"
 material = "1.13.0"
-activity = "1.12.1"
+activity = "1.12.2"
 constraintlayout = "2.2.1"
 swiperefreshlayout = "1.2.0"
-swiperefreshlayoutVersion = "1.1.0"
 playServicesMlkitTextRecognitionCommon = "19.1.0"
 
 
 [libraries]
-firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
-firebase-auth = { module = "com.google.firebase:firebase-auth" }
+android-image-cropper = { module = "com.vanniktech:android-image-cropper", version.ref = "androidImageCropper" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics", version = "23.0.0" }
+firebase-auth = { module = "com.google.firebase:firebase-auth", version = "24.0.1" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" }
-firebase-storage = { module = "com.google.firebase:firebase-storage" }
+firebase-storage = { module = "com.google.firebase:firebase-storage", version = "22.0.1" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
-google-firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+google-firebase-firestore = { module = "com.google.firebase:firebase-firestore", version = "26.0.2" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -31,7 +32,6 @@ material = { group = "com.google.android.material", name = "material", version.r
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
-swiperefreshlayout-v110 = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayoutVersion" }
 play-services-mlkit-text-recognition-common = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-common", version.ref = "playServicesMlkitTextRecognitionCommon" }
 
 [plugins]
