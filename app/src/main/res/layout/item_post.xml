@@ -7,22 +7,24 @@
     android:layout_margin="8dp"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
-    android:backgroundTint="#FFFFFF">
+    app:cardBackgroundColor="?android:attr/colorBackground">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:layout_marginTop="0dp"> <ImageButton
-        android:id="@+id/btnDeletePost"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@android:drawable/ic_menu_delete"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        app:tint="#D32F2F"
-        android:visibility="gone" />
+        android:layout_marginTop="0dp">
+
+        <ImageButton
+            android:id="@+id/btnDeletePost"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_delete"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            app:tint="#D32F2F"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/headerLayout"
@@ -55,7 +57,7 @@
                     android:text="Nome do Aluno"
                     android:textStyle="bold"
                     android:textSize="16sp"
-                    android:textColor="#000000"/>
+                    android:textColor="?android:attr/textColorPrimary"/>
 
                 <TextView
                     android:id="@+id/postDate"
@@ -63,7 +65,7 @@
                     android:layout_height="wrap_content"
                     android:text="10 min"
                     android:textSize="12sp"
-                    android:textColor="#757575"/>
+                    android:textColor="?android:attr/textColorSecondary"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -74,7 +76,7 @@
             android:layout_below="@id/headerLayout"
             android:text="Texto do post..."
             android:textSize="15sp"
-            android:textColor="#333333"
+            android:textColor="?android:attr/textColorPrimary"
             android:lineSpacingExtra="4dp"
             android:layout_marginBottom="12dp"/>
 
@@ -101,7 +103,7 @@
                 android:layout_height="wrap_content"
                 android:text="🤍 0"
                 android:textSize="14sp"
-                android:textColor="#555555"
+                android:textColor="?android:attr/textColorSecondary"
                 android:padding="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:layout_marginEnd="24dp"/>
@@ -112,7 +114,7 @@
                 android:layout_height="wrap_content"
                 android:text="💬 Comentar"
                 android:textSize="14sp"
-                android:textColor="#555555"
+                android:textColor="?android:attr/textColorSecondary"
                 android:padding="8dp"
                 android:background="?attr/selectableItemBackground"/>
         </LinearLayout>

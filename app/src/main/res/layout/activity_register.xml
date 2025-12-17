@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#FFFFFF"
+    android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
     <LinearLayout
@@ -20,14 +20,14 @@
             android:text="Criar Conta"
             android:textSize="32sp"
             android:textStyle="bold"
-            android:textColor="#6200EE"
+            android:textColor="?attr/colorPrimary"
             android:layout_marginBottom="8dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Junta-te à comunidade UniVerse"
-            android:textColor="#757575"
+            android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="32dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -109,8 +109,8 @@
             android:layout_width="match_parent"
             android:layout_height="55dp"
             android:text="CRIAR CONTA"
-            android:backgroundTint="#6200EE"
-            android:textColor="#FFFFFF"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="?attr/colorOnPrimary"
             android:textStyle="bold"
             app:cornerRadius="8dp"/>
 
@@ -131,13 +131,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Já tens conta? "
-                android:textColor="#757575"/>
+                android:textColor="?android:attr/textColorSecondary"/>
             <TextView
                 android:id="@+id/textViewLoginLink"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Entra aqui"
-                android:textColor="#6200EE"
+                android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
                 android:padding="4dp"/>
         </LinearLayout>

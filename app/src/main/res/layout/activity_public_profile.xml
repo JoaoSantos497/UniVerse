@@ -2,10 +2,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#FFFFFF"
-    android:layout_marginTop="30dp">
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="24dp"
+    android:paddingTop="30dp"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true">
 
     <ImageButton
         android:id="@+id/btnBackComments"
@@ -14,6 +18,7 @@
         android:src="@drawable/ic_arrow_back"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:layout_marginBottom="10dp"
+        app:tint="?android:attr/textColorPrimary"
         android:contentDescription="Voltar"/>
 
     <ImageView
@@ -33,7 +38,7 @@
         android:text="Carregando..."
         android:textSize="22sp"
         android:textStyle="bold"
-        android:textColor="#000000"
+        android:textColor="?android:attr/textColorPrimary"
         android:layout_gravity="center_horizontal"/>
 
     <TextView
@@ -42,7 +47,7 @@
         android:layout_height="wrap_content"
         android:text="..."
         android:textSize="16sp"
-        android:textColor="#757575"
+        android:textColor="?android:attr/textColorSecondary"
         android:layout_marginBottom="24dp"
         android:layout_gravity="center_horizontal"/>
 
@@ -67,11 +72,12 @@
                 android:text="0"
                 android:textStyle="bold"
                 android:textSize="18sp"
-                android:textColor="#000000"/>
+                android:textColor="?android:attr/textColorPrimary"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Seguidores"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="12sp"/>
         </LinearLayout>
 
@@ -87,11 +93,12 @@
                 android:text="0"
                 android:textStyle="bold"
                 android:textSize="18sp"
-                android:textColor="#000000"/>
+                android:textColor="?android:attr/textColorPrimary"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="A Seguir"
+                android:textColor="?android:attr/textColorSecondary"
                 android:textSize="12sp"/>
         </LinearLayout>
     </LinearLayout>
@@ -101,8 +108,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Seguir"
-        android:backgroundTint="#6200EE"
-        android:textColor="#FFFFFF"
+        android:backgroundTint="?attr/colorPrimary"
+        android:textColor="?attr/colorOnPrimary"
         android:layout_gravity="center_horizontal"/>
 
 </LinearLayout>

@@ -20,21 +20,25 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingBottom="16dp"
-        android:paddingTop="27dp"> <ImageButton
-        android:id="@+id/btnBackComments"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_arrow_back"
-        app:tint="?android:attr/textColorPrimary" /> <ImageView
-        android:id="@+id/publicProfileImage"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/circle_bg"
-        android:scaleType="centerCrop"
-        android:src="@drawable/circle_bg" />
+        android:paddingTop="30dp">
+
+        <ImageButton
+            android:id="@+id/btnBackComments"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="?android:attr/textColorPrimary" />
+
+        <ImageView
+            android:id="@+id/publicProfileImage"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/circle_bg"
+            android:scaleType="centerCrop"
+            android:src="@drawable/circle_bg" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -65,19 +69,16 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="gone" />
-
         <TextView
             android:id="@+id/publicFollowingCount"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="gone" />
-
         <Button
             android:id="@+id/btnFollowProfile"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:visibility="gone" />
-
     </LinearLayout>
 
     <LinearLayout
@@ -130,8 +131,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_centerInParent="true"
-                android:adjustViewBounds="true"
-                android:src="@drawable/bg_search_outline" />
+                android:adjustViewBounds="true" />
 
             <ImageButton
                 android:id="@+id/btnRemoveCommentImage"
@@ -161,7 +161,7 @@
                 android:background="@drawable/bg_search_outline"
                 android:padding="12dp"
                 android:textColor="?android:attr/textColorPrimary"
-                android:hintTextColor="?android:attr/textColorSecondary"
+                android:textColorHint="?android:attr/textColorSecondary"
                 android:layout_marginEnd="12dp"
                 android:maxLines="3"
                 android:inputType="textCapSentences"
@@ -173,7 +173,6 @@
                 android:layout_height="40dp"
                 android:src="@drawable/ic_attach_file"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Anexar Imagem"
                 app:tint="?attr/colorPrimary"
                 android:layout_marginEnd="8dp"/>
 
@@ -183,7 +182,6 @@
                 android:layout_height="48dp"
                 android:src="@android:drawable/ic_menu_send"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Enviar"
                 app:tint="?attr/colorPrimary"/>
         </LinearLayout>
     </LinearLayout>
@@ -196,5 +194,4 @@
         android:layout_above="@id/bottomInputLayout"
         android:padding="8dp"
         android:clipToPadding="false"/>
-
 </RelativeLayout>

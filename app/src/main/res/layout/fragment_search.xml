@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp">
 
     <EditText
@@ -18,8 +18,10 @@
         android:paddingEnd="16dp"
         android:drawableStart="@drawable/ic_search"
         android:drawablePadding="12dp"
-        android:drawableTint="#757575"
+        android:drawableTint="?android:attr/textColorSecondary"
         android:inputType="textPersonName"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary"
         android:maxLines="1"
         android:imeOptions="actionSearch"
         android:textSize="16sp"
@@ -43,7 +45,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:indeterminateTint="#6200EE"
+        android:indeterminateTint="?attr/colorPrimary"
         app:layout_constraintTop_toTopOf="@id/recycler_view_search"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -65,14 +67,15 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:src="@drawable/ic_search"
-            app:tint="#E0E0E0"
+            app:tint="?android:attr/textColorSecondary"
+            android:alpha="0.3"
             android:layout_marginBottom="16dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Nenhum utilizador encontrado."
-            android:textColor="#999999"
+            android:textColor="?android:attr/textColorSecondary"
             android:textSize="16sp"/>
     </LinearLayout>
 

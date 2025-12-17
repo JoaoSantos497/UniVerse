@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#F5F5F5"
+    android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
     <LinearLayout
@@ -18,7 +18,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            android:background="#FFFFFF">
+            android:paddingTop="30dp"
+            android:background="?android:attr/colorBackground">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -26,7 +27,7 @@
                 android:text="O meu Perfil"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 android:layout_centerVertical="true"/>
 
             <ImageButton
@@ -39,7 +40,7 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:contentDescription="Definições"
-                app:tint="#333333" />
+                app:tint="?android:attr/textColorPrimary" />
         </RelativeLayout>
 
         <LinearLayout
@@ -49,7 +50,7 @@
             android:gravity="center_horizontal"
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
-            android:background="#FFFFFF"
+            android:background="?android:attr/colorBackground"
             android:paddingBottom="24dp">
 
             <ImageView
@@ -69,7 +70,7 @@
                 android:text="Carregando..."
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="#000000"
+                android:textColor="?android:attr/textColorPrimary"
                 android:layout_marginBottom="4dp" />
 
             <TextView
@@ -78,7 +79,7 @@
                 android:layout_height="wrap_content"
                 android:text="email@exemplo.com"
                 android:textSize="14sp"
-                android:textColor="#757575"
+                android:textColor="?android:attr/textColorSecondary"
                 android:layout_marginBottom="4dp" />
 
             <TextView
@@ -88,7 +89,7 @@
                 android:text="@username"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#6200EE"
+                android:textColor="?attr/colorPrimary"
                 android:layout_marginBottom="16dp" />
 
             <LinearLayout
@@ -111,14 +112,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
-                        android:textColor="#000000"
+                        android:textColor="?android:attr/textColorPrimary"
                         android:textStyle="bold"
                         android:textSize="18sp"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Seguidores"
-                        android:textColor="#000000"
+                        android:textColor="?android:attr/textColorPrimary"
                         android:textSize="12sp"/>
                 </LinearLayout>
 
@@ -134,14 +135,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
-                        android:textColor="#000000"
+                        android:textColor="?android:attr/textColorPrimary"
                         android:textStyle="bold"
                         android:textSize="18sp"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="A Seguir"
-                        android:textColor="#000000"
+                        android:textColor="?android:attr/textColorPrimary"
                         android:textSize="12sp"/>
                 </LinearLayout>
             </LinearLayout>
@@ -150,7 +151,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#FFFFFF"
+                android:background="?android:attr/colorBackground"
                 android:padding="12dp"
                 android:elevation="2dp"
                 android:layout_marginBottom="16dp">
@@ -162,14 +163,14 @@
                     android:text="Curso..."
                     android:textStyle="bold"
                     android:textSize="16sp"
-                    android:textColor="#333333"/>
+                    android:textColor="?android:attr/textColorPrimary"/>
                 <TextView
                     android:id="@+id/profileUni"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Universidade..."
                     android:textSize="14sp"
-                    android:textColor="#757575"/>
+                    android:textColor="?android:attr/textColorSecondary"/>
             </LinearLayout>
 
             <Button
@@ -177,14 +178,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Editar Perfil"
-                android:backgroundTint="#6200EE"
-                android:textColor="#FFFFFF"
+                android:backgroundTint="?attr/colorPrimary"
+                android:textColor="?attr/colorOnPrimary"
                 android:layout_marginBottom="16dp"/>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#CCCCCC"
+                android:background="?android:attr/listDivider"
                 android:layout_marginBottom="8dp"/>
 
             <TextView
@@ -192,6 +193,7 @@
                 android:layout_height="wrap_content"
                 android:text="As minhas publicações"
                 android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
                 android:layout_marginBottom="8dp"/>
 
             <androidx.recyclerview.widget.RecyclerView
@@ -213,13 +215,13 @@
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:src="@android:drawable/ic_menu_edit"
-                    app:tint="#CCCCCC"/>
+                    app:tint="?android:attr/textColorSecondary"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Ainda não publicaste nada."
-                    android:textColor="#999999"
+                    android:textColor="?android:attr/textColorSecondary"
                     android:layout_marginTop="8dp"/>
             </LinearLayout>
 

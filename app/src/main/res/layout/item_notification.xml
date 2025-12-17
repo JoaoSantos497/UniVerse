@@ -26,7 +26,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="João gostou da tua foto"
-            android:textColor="#000000"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp"/>
     </LinearLayout>
 
@@ -35,7 +35,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="2 min"
-        android:textColor="#999999"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="12sp"
         android:layout_marginStart="8dp"/>
 

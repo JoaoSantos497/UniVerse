@@ -58,9 +58,7 @@ public class CreatePostActivity extends AppCompatActivity {
         btnPublish = findViewById(R.id.btnPublish);
 
         // Componentes do XML
-        ImageButton btnBack = findViewById(R.id.btnBackSettings);
-        btnSelectPhoto = findViewById(R.id.btnSelectPhoto);
-        imagePreviewContainer = findViewById(R.id.imagePreviewContainer);
+        ImageButton btnBack = findViewById(R.id.btnCloseCreatePost);
         imagePreview = findViewById(R.id.imagePreview);
         btnRemoveImage = findViewById(R.id.btnRemoveImage);
 

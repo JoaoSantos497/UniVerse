@@ -10,6 +10,7 @@
     app:cardElevation="2dp"
     android:clickable="true"
     android:focusable="true"
+    app:cardBackgroundColor="?android:attr/colorBackground"
     android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
@@ -41,7 +42,7 @@
                 android:text="Nome do Aluno"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#000000"/>
+                android:textColor="?android:attr/textColorPrimary"/>
 
             <TextView
                 android:id="@+id/searchUsername"
@@ -49,7 +50,7 @@
                 android:layout_height="wrap_content"
                 android:text="@username"
                 android:textSize="14sp"
-                android:textColor="#757575"/>
+                android:textColor="?android:attr/textColorSecondary"/>
         </LinearLayout>
 
     </LinearLayout>
