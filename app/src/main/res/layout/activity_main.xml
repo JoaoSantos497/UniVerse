@@ -21,8 +21,10 @@
         android:layout_alignParentBottom="true"
         android:background="?android:attr/colorBackground"
         app:menu="@menu/bottom_nav_menu"
-        app:itemIconTint="@color/nav_item_colors"
-        app:itemTextColor="@color/nav_item_colors"
+
+        app:itemIconTint="@color/nav_item_selector"
+        app:itemTextColor="@color/nav_item_selector"
+
         app:itemRippleColor="#206200EE"
         app:itemIconSize="24dp"
         app:elevation="8dp"
