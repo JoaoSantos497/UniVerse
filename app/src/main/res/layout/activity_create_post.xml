@@ -101,8 +101,8 @@
                 android:textColorHint="?android:attr/textColorSecondary"
                 android:gravity="top|start"
                 android:minLines="5"
-                android:textSize="18sp"
-                android:inputType="textMultiLine|textCapSentences"/>
+                android:inputType="textCapSentences|textMultiLine"
+                android:importantForAutofill="no" />
 
             <RelativeLayout
                 android:layout_width="match_parent"

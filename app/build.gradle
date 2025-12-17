@@ -51,7 +51,8 @@ dependencies {
     implementation(libs.glide)
     implementation libs.swiperefreshlayout
     implementation(libs.android.image.cropper)
-     
+    implementation libs.glide.v4120
+    annotationProcessor libs.compiler
 
 
 

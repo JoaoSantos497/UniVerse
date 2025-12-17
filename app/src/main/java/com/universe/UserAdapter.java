@@ -18,7 +18,8 @@ import java.util.List;
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
     private List<User> userList;
-    private Context context; // Necessário para o Glide e Intents
+    private Context context;
+
 
     public UserAdapter(List<User> userList) {
         this.userList = userList;

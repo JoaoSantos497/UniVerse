@@ -8,7 +8,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
+import android.widget.RelativeLayout; // Importante para o container
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultCallback;
@@ -16,6 +17,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -29,12 +31,16 @@ import java.util.UUID;
 public class CreatePostActivity extends AppCompatActivity {
 
     private EditText inputPostContent;
-    private Button btnPublish, btnSelectPhoto;
+    private Button btnPublish;
+    private ImageButton btnSelectPhoto;
 
     // UI para a Imagem
-    private RelativeLayout imagePreviewContainer;
     private ImageView imagePreview;
     private ImageButton btnRemoveImage;
+
+    // UI do Utilizador (Topo)
+    private TextView currentUserName;
+    private ImageView currentUserImage;
 
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
@@ -56,8 +62,13 @@ public class CreatePostActivity extends AppCompatActivity {
         // Ligar UI
         inputPostContent = findViewById(R.id.inputPostContent);
         btnPublish = findViewById(R.id.btnPublish);
+        btnSelectPhoto = findViewById(R.id.btnAddImage);
 
-        // Componentes do XML
+        // Dados do User (Topo)
+        currentUserName = findViewById(R.id.currentUserName);
+        currentUserImage = findViewById(R.id.currentUserImage); // Faltava inicializar isto!
+
+        // Componentes da Imagem (Preview)
         ImageButton btnBack = findViewById(R.id.btnCloseCreatePost);
         imagePreview = findViewById(R.id.imagePreview);
         btnRemoveImage = findViewById(R.id.btnRemoveImage);
@@ -65,7 +76,10 @@ public class CreatePostActivity extends AppCompatActivity {
         // Botão Voltar
         btnBack.setOnClickListener(v -> finish());
 
-        // --- 1. CONFIGURAR A GALERIA ---
+        // --- 1. CARREGAR DADOS DO UTILIZADOR (NOME E FOTO) ---
+        carregarDadosUtilizador();
+
+        // --- 2. CONFIGURAR A GALERIA ---
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(),
                 new ActivityResultCallback<Uri>() {
                     @Override
@@ -73,7 +87,10 @@ public class CreatePostActivity extends AppCompatActivity {
                         if (uri != null) {
                             selectedImageUri = uri;
                             imagePreview.setImageURI(uri);
-                            imagePreviewContainer.setVisibility(View.VISIBLE);
+
+                            // Mostrar a imagem e o botão de remover
+                            imagePreview.setVisibility(View.VISIBLE);
+                            btnRemoveImage.setVisibility(View.VISIBLE);
                         }
                     }
                 });
@@ -85,11 +102,68 @@ public class CreatePostActivity extends AppCompatActivity {
         btnRemoveImage.setOnClickListener(v -> {
             selectedImageUri = null;
             imagePreview.setImageURI(null);
-            imagePreviewContainer.setVisibility(View.GONE);
+
+            // Esconder a imagem e o botão de remover
+            imagePreview.setVisibility(View.GONE);
+            btnRemoveImage.setVisibility(View.GONE);
         });
 
         // Configurar Botão Publicar
         btnPublish.setOnClickListener(v -> prepararPublicacao());
+    }
+
+    // --- Metodo para carregar perfil ---
+    private void carregarDadosUtilizador() {
+        if (mAuth.getCurrentUser() != null) {
+            String uid = mAuth.getCurrentUser().getUid();
+            Uri authPhotoUrl = mAuth.getCurrentUser().getPhotoUrl(); // 1. Tentar obter do Auth
+
+            // Se existir no Auth, carrega imediatamente
+            if (authPhotoUrl != null) {
+                Glide.with(CreatePostActivity.this)
+                        .load(authPhotoUrl)
+                        .circleCrop()
+                        .into(currentUserImage);
+            }
+
+            // Vai à base de dados confirmar (pode haver uma foto mais recente lá)
+            db.collection("users").document(uid).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            // Carregar Nome
+                            String nome = documentSnapshot.getString("nome");
+                            if (nome == null) nome = documentSnapshot.getString("username"); // Tenta username também
+                            if (nome != null) {
+                                currentUserName.setText(nome);
+                            }
+
+                            // 2. Tentar encontrar a foto no Firestore com VÁRIOS nomes
+                            String firestorePhoto = documentSnapshot.getString("photoUrl");
+                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("profileImage");
+                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("imagem");
+                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("image");
+                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("profileUrl");
+
+                            // Se encontrou no Firestore, usa essa (sobrescreve a do Auth se existir)
+                            if (firestorePhoto != null && !firestorePhoto.isEmpty()) {
+                                Glide.with(CreatePostActivity.this)
+                                        .load(firestorePhoto)
+                                        .circleCrop()
+                                        .placeholder(R.drawable.circle_bg)
+                                        .into(currentUserImage);
+                            } else {
+                                // DEBUG: Se não encontrou no Firestore e também não tinha no Auth
+                                if (authPhotoUrl == null) {
+                                    // Podes comentar esta linha depois de testar
+                                    // Toast.makeText(CreatePostActivity.this, "Aviso: Nenhuma foto encontrada na BD", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(CreatePostActivity.this, "Erro de ligação à BD.", Toast.LENGTH_SHORT).show();
+                    });
+        }
     }
 
     private void prepararPublicacao() {
@@ -105,11 +179,9 @@ public class CreatePostActivity extends AppCompatActivity {
         btnPublish.setText("A publicar...");
 
         if (selectedImageUri != null) {
-            // Se tem imagem, faz upload primeiro
             fazerUploadImagem(content);
         } else {
-            // Se não tem imagem, segue direto
-            buscarDadosUsuarioEGuardar(content, null);
+            buscarDadosUserEGuardar(content, null);
         }
     }
 
@@ -125,7 +197,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 .addOnSuccessListener(taskSnapshot -> {
                     ref.getDownloadUrl().addOnSuccessListener(uri -> {
                         String downloadUrl = uri.toString();
-                        buscarDadosUsuarioEGuardar(content, downloadUrl);
+                        buscarDadosUserEGuardar(content, downloadUrl);
                     });
                 })
                 .addOnFailureListener(e -> {
@@ -135,21 +207,18 @@ public class CreatePostActivity extends AppCompatActivity {
                 });
     }
 
-    private void buscarDadosUsuarioEGuardar(String content, String imageUrl) {
+    private void buscarDadosUserEGuardar(String content, String imageUrl) {
         if (mAuth.getCurrentUser() == null) return;
 
         String uid = mAuth.getCurrentUser().getUid();
         String email = mAuth.getCurrentUser().getEmail();
 
-        // --- 1. EXTRAIR DOMÍNIO DA UNIVERSIDADE ---
         String dominioTemp = "geral";
         if (email != null && email.contains("@")) {
             dominioTemp = email.substring(email.indexOf("@") + 1);
         }
         final String universityDomain = dominioTemp;
 
-        // --- 2. RECEBER O TIPO DE POST (VEM DO HOMEFRAGMENT) ---
-        // 0 = Global, 1 = Minha Uni
         int selectedTab = getIntent().getIntExtra("selectedTab", 0);
         String type;
         if (selectedTab == 1) {
@@ -158,7 +227,6 @@ public class CreatePostActivity extends AppCompatActivity {
             type = "global";
         }
         final String postTypeFinal = type;
-        // -------------------------------------------------------
 
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -169,7 +237,10 @@ public class CreatePostActivity extends AppCompatActivity {
                         long timestamp = System.currentTimeMillis();
                         String nomeAutor = (user != null && user.getNome() != null) ? user.getNome() : "Anónimo";
 
-                        // --- 3. CRIAR POST COM TODOS OS DADOS ---
+                        // Tentar obter a foto do objeto User também, caso exista
+                        String userPhotoUrl = null;
+                        //userPhotoUrl = user.getphotoUrl(); // Se tiveres este método no User.java
+
                         Post novoPost = new Post(
                                 uid,
                                 nomeAutor,
@@ -199,7 +270,6 @@ public class CreatePostActivity extends AppCompatActivity {
     private void guardarNoFirestore(Post post) {
         db.collection("posts").add(post)
                 .addOnSuccessListener(documentReference -> {
-                    // Atualizar o ID do post no documento
                     String postId = documentReference.getId();
                     documentReference.update("postId", postId);
 

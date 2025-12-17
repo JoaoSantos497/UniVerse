@@ -167,7 +167,7 @@ public class CommentsActivity extends AppCompatActivity {
             if (doc.exists()) {
                 Post post = doc.toObject(Post.class);
                 if (post != null) {
-                    postAuthorId = post.getUserId(); // Guardar para notificações
+                    postAuthorId = post.getUserId();
                     carregarHeaderAutor(postAuthorId);
                 }
             }
@@ -186,8 +186,6 @@ public class CommentsActivity extends AppCompatActivity {
                         Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(headerProfileImage);
                     }
 
-                    // Contadores (Opcional: podes carregar as subcoleções se quiseres números reais)
-                    // Para simplificar, deixo a lógica visual. Se quiseres números, usa o código do PublicProfileActivity
                 }
             }
         });
