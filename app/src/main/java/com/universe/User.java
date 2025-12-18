@@ -9,9 +9,11 @@ public class User {
     private String universidade;
     private String photoUrl;
     private long ultimaTrocaUsername;
+    private String universityDomain;
 
-    // --- NOVO CAMPO ---
-    private String universityDomain; // ex: "ips.pt"
+    // --- NOVOS CAMPOS PARA CONTADORES ---
+    private long followersCount;
+    private long followingCount;
 
     // Construtor padrão (Obrigatório para o Firebase)
     public User() {}
@@ -25,6 +27,8 @@ public class User {
         this.curso = curso;
         this.universidade = universidade;
         this.ultimaTrocaUsername = 0;
+        this.followersCount = 0; // Inicializa a zero
+        this.followingCount = 0; // Inicializa a zero
 
         // Lógica para extrair o domínio automaticamente do email
         if (email != null && email.contains("@")) {
@@ -46,6 +50,7 @@ public class User {
     public void setUsername(String username) { this.username = username; }
 
     public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getCurso() { return curso; }
     public void setCurso(String curso) { this.curso = curso; }
@@ -57,8 +62,15 @@ public class User {
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
 
     public long getUltimaTrocaUsername() { return ultimaTrocaUsername; }
+    public void setUltimaTrocaUsername(long ultimaTrocaUsername) { this.ultimaTrocaUsername = ultimaTrocaUsername; }
 
-    // --- NOVOS GETTERS E SETTERS PARA O DOMÍNIO ---
     public String getUniversityDomain() { return universityDomain; }
     public void setUniversityDomain(String universityDomain) { this.universityDomain = universityDomain; }
+
+    // --- GETTERS E SETTERS DOS CONTADORES ---
+    public long getFollowersCount() { return followersCount; }
+    public void setFollowersCount(long followersCount) { this.followersCount = followersCount; }
+
+    public long getFollowingCount() { return followingCount; }
+    public void setFollowingCount(long followingCount) { this.followingCount = followingCount; }
 }

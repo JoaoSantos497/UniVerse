@@ -33,7 +33,6 @@ public class ProfileFragment extends Fragment {
     private ImageView profileAvatar;
     private TextView profileName, profileCurso, profileUni, profileEmail, profileUsername;
     private TextView txtMyFollowers, txtMyFollowing;
-    //private LinearLayout emptyView;
 
     private Button btnEditProfile;
     private ImageButton btnSettings;
@@ -55,7 +54,7 @@ public class ProfileFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // 1. Ligar componentes
+        // 1. Ligar componentes da UI
         profileAvatar = view.findViewById(R.id.profileAvatar);
         profileName = view.findViewById(R.id.profileName);
         profileUsername = view.findViewById(R.id.profileUsername);
@@ -65,7 +64,6 @@ public class ProfileFragment extends Fragment {
 
         txtMyFollowers = view.findViewById(R.id.txtMyFollowers);
         txtMyFollowing = view.findViewById(R.id.txtMyFollowing);
-        //emptyView = view.findViewById(R.id.emptyView);
 
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
         btnSettings = view.findViewById(R.id.btnSettings);
@@ -88,35 +86,17 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
-        // 4. CARREGAR DADOS E CONFIGURAR CLIQUES NAS LISTAS
+        // 4. Carregar Dados do Utilizador
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             String myUid = user.getUid();
 
+            // Única fonte de verdade: Snapshot em tempo real do documento do user
             carregarDadosEmTempoReal(myUid);
-            carregarMeusContadores(myUid);
             carregarMeusPosts(myUid);
 
-
-            // Clique nos Seguidores (Apanha o pai do TextView para clicar na área toda)
-            if (txtMyFollowers.getParent() instanceof View) {
-                ((View) txtMyFollowers.getParent()).setOnClickListener(v -> {
-                    Intent intent = new Intent(getActivity(), UserListActivity.class);
-                    intent.putExtra("userId", myUid);
-                    intent.putExtra("type", "followers");
-                    startActivity(intent);
-                });
-            }
-
-            // Clique no A Seguir
-            if (txtMyFollowing.getParent() instanceof View) {
-                ((View) txtMyFollowing.getParent()).setOnClickListener(v -> {
-                    Intent intent = new Intent(getActivity(), UserListActivity.class);
-                    intent.putExtra("userId", myUid);
-                    intent.putExtra("type", "following");
-                    startActivity(intent);
-                });
-            }
+            // Configurar Cliques para abrir as listas de Seguidores/Seguindo
+            setupClickListeners(myUid);
         }
 
         return view;
@@ -133,14 +113,25 @@ public class ProfileFragment extends Fragment {
                             User aluno = documentSnapshot.toObject(User.class);
 
                             if (aluno != null) {
+                                // Dados textuais
                                 profileName.setText(aluno.getNome());
                                 profileCurso.setText(aluno.getCurso());
-
-                                // Se tiveres os campos extra no layout:
                                 profileUni.setText(aluno.getUniversidade());
                                 profileEmail.setText(aluno.getEmail());
                                 if (profileUsername != null) profileUsername.setText("@" + aluno.getUsername());
 
+                                // --- CONTADORES ATÓMICOS ---
+                                // Lemos os campos que as Cloud Functions e o WriteBatch atualizam.
+                                // Math.max(0, ...) garante que nunca apareça -1 na interface.
+                                long numFollowers = documentSnapshot.getLong("followersCount") != null ?
+                                        documentSnapshot.getLong("followersCount") : 0;
+                                long numFollowing = documentSnapshot.getLong("followingCount") != null ?
+                                        documentSnapshot.getLong("followingCount") : 0;
+
+                                txtMyFollowers.setText(String.valueOf(Math.max(0, numFollowers)));
+                                txtMyFollowing.setText(String.valueOf(Math.max(0, numFollowing)));
+
+                                // Carregar Foto de Perfil
                                 if (aluno.getPhotoUrl() != null && !aluno.getPhotoUrl().isEmpty()) {
                                     if (getContext() != null) {
                                         Glide.with(getContext())
@@ -157,16 +148,26 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    private void carregarMeusContadores(String uid) {
-        db.collection("users").document(uid).collection("followers")
-                .addSnapshotListener((value, error) -> {
-                    if (value != null) txtMyFollowers.setText(String.valueOf(value.size()));
-                });
+    private void setupClickListeners(String myUid) {
+        // Clique na área de Seguidores
+        if (txtMyFollowers.getParent() instanceof View) {
+            ((View) txtMyFollowers.getParent()).setOnClickListener(v -> {
+                Intent intent = new Intent(getActivity(), UserListActivity.class);
+                intent.putExtra("userId", myUid);
+                intent.putExtra("type", "followers");
+                startActivity(intent);
+            });
+        }
 
-        db.collection("users").document(uid).collection("following")
-                .addSnapshotListener((value, error) -> {
-                    if (value != null) txtMyFollowing.setText(String.valueOf(value.size()));
-                });
+        // Clique na área de Seguindo
+        if (txtMyFollowing.getParent() instanceof View) {
+            ((View) txtMyFollowing.getParent()).setOnClickListener(v -> {
+                Intent intent = new Intent(getActivity(), UserListActivity.class);
+                intent.putExtra("userId", myUid);
+                intent.putExtra("type", "following");
+                startActivity(intent);
+            });
+        }
     }
 
     private void carregarMeusPosts(String uid) {
@@ -186,17 +187,6 @@ public class ProfileFragment extends Fragment {
                             }
                         }
                         postAdapter.notifyDataSetChanged();
-
-                        // Lógica para mostrar/esconder view vazia (se tiveres no XML)
-                        /*
-                        if (postList.isEmpty() && emptyView != null) {
-                            recyclerView.setVisibility(View.GONE);
-                            emptyView.setVisibility(View.VISIBLE);
-                        } else if (emptyView != null) {
-                            recyclerView.setVisibility(View.VISIBLE);
-                            emptyView.setVisibility(View.GONE);
-                        }
-                        */
                     }
                 });
     }

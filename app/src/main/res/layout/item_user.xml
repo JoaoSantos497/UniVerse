@@ -25,14 +25,13 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:src="@drawable/circle_bg"
-            android:background="@drawable/circle_bg"
             android:scaleType="centerCrop"
-            android:padding="2dp"
             android:layout_marginEnd="16dp"/>
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
@@ -42,7 +41,9 @@
                 android:text="Nome do Aluno"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="?android:attr/textColorPrimary"/>
+                android:textColor="?android:attr/textColorPrimary"
+                android:ellipsize="end"
+                android:singleLine="true"/>
 
             <TextView
                 android:id="@+id/searchUsername"
@@ -52,6 +53,17 @@
                 android:textSize="14sp"
                 android:textColor="?android:attr/textColorSecondary"/>
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSeguir"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Seguir"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:cornerRadius="20dp" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

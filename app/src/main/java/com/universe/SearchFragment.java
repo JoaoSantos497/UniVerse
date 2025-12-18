@@ -58,7 +58,7 @@ public class SearchFragment extends Fragment {
 
         userList = new ArrayList<>();
         userIdsAdicionados = new HashSet<>();
-        userAdapter = new UserAdapter(userList);
+        userAdapter = new UserAdapter(userList, false);
         recyclerView.setAdapter(userAdapter);
 
         searchBar.addTextChangedListener(new TextWatcher() {
