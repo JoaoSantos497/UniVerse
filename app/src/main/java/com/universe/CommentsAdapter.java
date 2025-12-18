@@ -39,14 +39,13 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
-        // Ativa IDs estáveis para evitar bugs visuais durante a reciclagem
         setHasStableIds(true);
     }
 
     @Override
     public long getItemId(int position) {
-        // Usa o hash do ID do comentário como identificador único estável
-        return commentList.get(position).getCommentId().hashCode();
+        String id = commentList.get(position).getCommentId();
+        return id != null ? id.hashCode() : position;
     }
 
     @NonNull
@@ -61,9 +60,10 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
     public void onBindViewHolder(@NonNull CommentViewHolder holder, int position) {
         Comment comment = commentList.get(position);
 
-        holder.userName.setText(comment.getUserName());
+        holder.userName.setText(comment.getUserName() != null ? comment.getUserName() : "Utilizador");
         holder.content.setText(comment.getContent());
 
+        // Tempo relativo (ex: "há 5 min")
         long now = System.currentTimeMillis();
         CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
                 comment.getTimestamp(),
@@ -72,58 +72,54 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         holder.date.setText(relativeTime);
 
         // Foto de Perfil
-        if (comment.getUserPhotoUrl() != null && !comment.getUserPhotoUrl().isEmpty()) {
-            Glide.with(context).load(comment.getUserPhotoUrl()).circleCrop()
-                    .placeholder(R.drawable.circle_bg).into(holder.imgProfile);
-        } else if (comment.getUserId() != null) {
-            holder.imgProfile.setImageResource(R.drawable.circle_bg);
-            db.collection("users").document(comment.getUserId()).get()
-                    .addOnSuccessListener(doc -> {
-                        if (doc.exists() && context != null) {
-                            String url = doc.getString("photoUrl");
-                            if (url != null) Glide.with(context).load(url).circleCrop().into(holder.imgProfile);
-                        }
-                    });
-        }
+        Glide.with(context)
+                .load(comment.getUserPhotoUrl())
+                .circleCrop()
+                .placeholder(R.drawable.circle_bg)
+                .into(holder.imgProfile);
 
-        // Imagem Anexada
+        // Imagem Anexada ao Comentário
         if (comment.getCommentImageUrl() != null && !comment.getCommentImageUrl().isEmpty()) {
             holder.attachedImage.setVisibility(View.VISIBLE);
-            Glide.with(context).load(comment.getCommentImageUrl()).into(holder.attachedImage);
+            Glide.with(context)
+                    .load(comment.getCommentImageUrl())
+                    .centerCrop()
+                    .into(holder.attachedImage);
         } else {
             holder.attachedImage.setVisibility(View.GONE);
         }
 
+        // Responder
         holder.btnReply.setOnClickListener(v -> {
             if (replyListener != null) replyListener.onReplyClick(comment.getUserName());
         });
 
-        // --- MENU DE OPÇÕES (3 PONTOS) ---
+        // Menu de Opções (Editar/Apagar)
         holder.btnMore.setOnClickListener(v -> {
-            // Obtém a posição REAL no momento do clique
             int actualPos = holder.getBindingAdapterPosition();
             if (actualPos == RecyclerView.NO_POSITION) return;
 
             PopupMenu popup = new PopupMenu(context, v);
+
+            // Só o dono do comentário pode editar ou apagar
             if (comment.getUserId() != null && comment.getUserId().equals(currentUserId)) {
-                popup.getMenu().add(0, 1, 0, "Editar Comentário");
-                popup.getMenu().add(0, 2, 1, "Apagar Comentário");
+                popup.getMenu().add(0, 1, 0, "Editar");
+                popup.getMenu().add(0, 2, 1, "Apagar");
             } else {
                 popup.getMenu().add(0, 3, 0, "Denunciar");
             }
 
             popup.setOnMenuItemClickListener(item -> {
-                switch (item.getItemId()) {
-                    case 1:
-                        if (context instanceof CommentsActivity) {
-                            ((CommentsActivity) context).prepararEdicaoComentario(comment);
-                        }
-                        return true;
-                    case 2:
-                        confirmarEliminacao(comment, actualPos); // Passa a posição real
-                        return true;
+                if (item.getItemId() == 1) {
+                    if (context instanceof CommentsActivity) {
+                        ((CommentsActivity) context).prepararEdicaoComentario(comment);
+                    }
+                } else if (item.getItemId() == 2) {
+                    confirmarEliminacao(comment, actualPos);
+                } else if (item.getItemId() == 3) {
+                    Toast.makeText(context, "Denúncia enviada.", Toast.LENGTH_SHORT).show();
                 }
-                return false;
+                return true;
             });
             popup.show();
         });
@@ -132,24 +128,21 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
     private void confirmarEliminacao(Comment comment, int position) {
         new AlertDialog.Builder(context)
                 .setTitle("Apagar Comentário")
-                .setMessage("Tens a certeza que queres eliminar este comentário?")
-                .setPositiveButton("Sim", (dialog, which) -> {
+                .setMessage("Desejas eliminar permanentemente este comentário?")
+                .setPositiveButton("Apagar", (dialog, which) -> {
                     if (context instanceof CommentsActivity) {
-                        // Chama o método da Activity
                         ((CommentsActivity) context).apagarComentario(comment.getCommentId(), position);
                     }
                 })
-                .setNegativeButton("Não", null)
+                .setNegativeButton("Cancelar", null)
                 .show();
     }
 
-    // Metodo para ser usado pela Activity para remover da lista local de forma segura
     public void removerItemDaLista(int position) {
         if (position >= 0 && position < commentList.size()) {
             commentList.remove(position);
             notifyItemRemoved(position);
-            // Corrige o bug visual de itens desaparecendo abaixo
-            notifyItemRangeChanged(position, commentList.size() - position);
+            notifyItemRangeChanged(position, commentList.size());
         }
     }
 

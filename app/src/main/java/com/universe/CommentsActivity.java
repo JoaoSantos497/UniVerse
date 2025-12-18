@@ -25,6 +25,7 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -36,26 +37,18 @@ import java.util.UUID;
 
 public class CommentsActivity extends AppCompatActivity {
 
-    // UI - Input e Lista
     private EditText inputComment;
     private ImageButton btnSend, btnBack, btnAttach, btnRemoveImage;
     private RecyclerView recyclerView;
-
-    // UI - Header (Dono do Post)
     private ImageView headerProfileImage;
     private TextView headerName, headerCourse;
     private Button btnHeaderFollow;
-
-    // UI - Preview de Imagem
     private RelativeLayout commentImagePreviewContainer;
     private ImageView commentImagePreview;
-
-    // UI - Responder / Editar (Overlay)
     private RelativeLayout replyContainer;
     private TextView txtReplyingTo;
     private ImageButton btnCloseReply;
 
-    // Dados e Firebase
     private CommentsAdapter adapter;
     private List<Comment> commentList;
     private FirebaseFirestore db;
@@ -66,8 +59,6 @@ public class CommentsActivity extends AppCompatActivity {
     private String postAuthorId;
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<String> mGetContent;
-
-    // Estado de Edição
     private String idComentarioEdicao = null;
 
     @Override
@@ -85,16 +76,13 @@ public class CommentsActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         storage = FirebaseStorage.getInstance();
 
-        // 1. Inicializar UI
         ligarComponentes();
 
-        // 2. Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentList = new ArrayList<>();
         adapter = new CommentsAdapter(commentList, username -> ativarModoResposta(username));
         recyclerView.setAdapter(adapter);
 
-        // 3. Configurar Seletor de Imagem
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
             if (uri != null) {
                 selectedImageUri = uri;
@@ -103,7 +91,6 @@ public class CommentsActivity extends AppCompatActivity {
             }
         });
 
-        // 4. Listeners de Cliques
         btnBack.setOnClickListener(v -> finish());
         btnAttach.setOnClickListener(v -> mGetContent.launch("image/*"));
         btnRemoveImage.setOnClickListener(v -> limparImagemSelecionada());
@@ -118,7 +105,6 @@ public class CommentsActivity extends AppCompatActivity {
             return false;
         });
 
-        // 5. Carregar Dados Iniciais
         carregarDadosDoPost();
         carregarComentarios();
     }
@@ -129,22 +115,48 @@ public class CommentsActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBackComments);
         btnAttach = findViewById(R.id.btnAttach);
         recyclerView = findViewById(R.id.recyclerComments);
-
         headerProfileImage = findViewById(R.id.publicProfileImage);
         headerName = findViewById(R.id.publicProfileName);
         headerCourse = findViewById(R.id.publicProfileCourse);
         btnHeaderFollow = findViewById(R.id.btnFollowProfile);
-
         commentImagePreviewContainer = findViewById(R.id.commentImagePreviewContainer);
         commentImagePreview = findViewById(R.id.commentImagePreview);
         btnRemoveImage = findViewById(R.id.btnRemoveCommentImage);
-
         replyContainer = findViewById(R.id.replyContainer);
         txtReplyingTo = findViewById(R.id.txtReplyingTo);
         btnCloseReply = findViewById(R.id.btnCloseReply);
     }
 
-    // --- LÓGICA DE DADOS ---
+    // --- MÉTODOS CHAMADOS PELO ADAPTER (DEVEM SER PUBLIC) ---
+
+    public void prepararEdicaoComentario(Comment comment) {
+        idComentarioEdicao = comment.getCommentId();
+        replyContainer.setVisibility(View.VISIBLE);
+        txtReplyingTo.setText("A editar o teu comentário...");
+        inputComment.setText(comment.getContent());
+        inputComment.requestFocus();
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
+
+        btnSend.setImageResource(android.R.drawable.ic_menu_save);
+        btnAttach.setVisibility(View.GONE);
+    }
+
+    public void apagarComentario(String commentId, int position) {
+        db.collection("posts").document(postId)
+                .collection("comments").document(commentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (adapter != null) {
+                        adapter.removerItemDaLista(position);
+                    }
+                    Toast.makeText(this, "Comentário removido", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Erro ao apagar comentário", Toast.LENGTH_SHORT).show());
+    }
+
+    // --- LÓGICA INTERNA ---
 
     private void carregarDadosDoPost() {
         db.collection("posts").document(postId).get().addOnSuccessListener(doc -> {
@@ -155,6 +167,9 @@ public class CommentsActivity extends AppCompatActivity {
                     carregarHeaderAutor(postAuthorId);
                 }
             }
+        }).addOnFailureListener(e -> {
+            Toast.makeText(this, "Não tens permissão para ver este post.", Toast.LENGTH_SHORT).show();
+            finish();
         });
     }
 
@@ -179,7 +194,7 @@ public class CommentsActivity extends AppCompatActivity {
 
     private void carregarComentarios() {
         db.collection("posts").document(postId).collection("comments")
-                .orderBy("timestamp")
+                .orderBy("timestamp", Query.Direction.ASCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) return;
                     if (value != null) {
@@ -187,32 +202,16 @@ public class CommentsActivity extends AppCompatActivity {
                         for (DocumentSnapshot doc : value.getDocuments()) {
                             Comment comment = doc.toObject(Comment.class);
                             if (comment != null) {
-                                comment.setCommentId(doc.getId()); // Essencial para editar/apagar
+                                comment.setCommentId(doc.getId());
                                 commentList.add(comment);
                             }
                         }
                         adapter.notifyDataSetChanged();
-                        if (commentList.size() > 0) {
+                        if (!commentList.isEmpty()) {
                             recyclerView.scrollToPosition(commentList.size() - 1);
                         }
                     }
                 });
-    }
-
-    // --- LÓGICA DE INTERAÇÃO ---
-
-    public void prepararEdicaoComentario(Comment comment) {
-        idComentarioEdicao = comment.getCommentId();
-        replyContainer.setVisibility(View.VISIBLE);
-        txtReplyingTo.setText("A editar o teu comentário...");
-        inputComment.setText(comment.getContent());
-        inputComment.requestFocus();
-
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
-
-        btnSend.setImageResource(android.R.drawable.ic_menu_save);
-        btnAttach.setVisibility(View.GONE);
     }
 
     private void ativarModoResposta(String username) {
@@ -221,9 +220,8 @@ public class CommentsActivity extends AppCompatActivity {
         inputComment.setText("@" + username + " ");
         inputComment.setSelection(inputComment.getText().length());
         inputComment.requestFocus();
-
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
+        if (imm != null) imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
     }
 
     private void cancelarEdicaoOuResposta() {
@@ -231,20 +229,9 @@ public class CommentsActivity extends AppCompatActivity {
         replyContainer.setVisibility(View.GONE);
         inputComment.setText("");
         btnSend.setImageResource(R.drawable.ic_send);
+        btnSend.setEnabled(true);
         btnAttach.setVisibility(View.VISIBLE);
         limparImagemSelecionada();
-    }
-
-    public void apagarComentario(String commentId, int position) {
-        db.collection("posts").document(postId)
-                .collection("comments").document(commentId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    // Notifica o adapter para remover o item localmente com animação correta
-                    if (adapter != null) {
-                        adapter.removerItemDaLista(position);
-                    }
-                });
     }
 
     private void limparImagemSelecionada() {
@@ -257,12 +244,13 @@ public class CommentsActivity extends AppCompatActivity {
         String texto = inputComment.getText().toString().trim();
         if (TextUtils.isEmpty(texto) && selectedImageUri == null) return;
 
+        btnSend.setEnabled(false);
+
         if (idComentarioEdicao != null) {
             enviarComentarioFinal(texto, null);
         } else {
-            Uri imageToUpload = selectedImageUri;
-            if (imageToUpload != null) {
-                uploadImageAndSend(texto, imageToUpload);
+            if (selectedImageUri != null) {
+                uploadImageAndSend(texto, selectedImageUri);
             } else {
                 enviarComentarioFinal(texto, null);
             }
@@ -271,14 +259,19 @@ public class CommentsActivity extends AppCompatActivity {
 
     private void uploadImageAndSend(String texto, Uri imageUri) {
         String uid = mAuth.getCurrentUser().getUid();
-        String fileName = "comment_images/" + uid + "/" + UUID.randomUUID().toString() + ".jpg";
+        String fileName = "comment_images/" + postId + "/" + UUID.randomUUID().toString() + ".jpg";
         StorageReference ref = storage.getReference().child(fileName);
+
+        Toast.makeText(this, "A enviar imagem...", Toast.LENGTH_SHORT).show();
 
         ref.putFile(imageUri).addOnSuccessListener(taskSnapshot ->
                 ref.getDownloadUrl().addOnSuccessListener(uri ->
                         enviarComentarioFinal(texto, uri.toString())
                 )
-        );
+        ).addOnFailureListener(e -> {
+            btnSend.setEnabled(true);
+            Toast.makeText(this, "Erro no upload: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        });
     }
 
     private void enviarComentarioFinal(String texto, String commentImageUrl) {
@@ -291,18 +284,26 @@ public class CommentsActivity extends AppCompatActivity {
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
                         cancelarEdicaoOuResposta();
-                    });
+                    })
+                    .addOnFailureListener(e -> btnSend.setEnabled(true));
         } else {
             db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
                 User user = doc.toObject(User.class);
                 if (user != null) {
                     String userPhoto = user.getPhotoUrl() != null ? user.getPhotoUrl() : "";
                     Comment comment = new Comment(uid, user.getNome(), userPhoto, texto, System.currentTimeMillis(), commentImageUrl);
-                    db.collection("posts").document(postId).collection("comments").add(comment);
-                    enviarNotificacaoComment(postAuthorId);
-                    cancelarEdicaoOuResposta();
+
+                    db.collection("posts").document(postId).collection("comments").add(comment)
+                            .addOnSuccessListener(documentReference -> {
+                                enviarNotificacaoComment(postAuthorId);
+                                cancelarEdicaoOuResposta();
+                            })
+                            .addOnFailureListener(e -> {
+                                btnSend.setEnabled(true);
+                                Toast.makeText(this, "Erro ao comentar.", Toast.LENGTH_SHORT).show();
+                            });
                 }
-            });
+            }).addOnFailureListener(e -> btnSend.setEnabled(true));
         }
     }
 

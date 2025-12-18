@@ -1,14 +1,21 @@
 package com.universe;
 
+import com.google.firebase.firestore.Exclude;
+import com.google.firebase.firestore.ServerTimestamp;
+import java.util.Date;
+
 public class Comment {
-    private String commentId; // ID do documento no Firestore
+    @Exclude
+    private String commentId; // ID do documento (não gravado dentro do documento)
+
     private String userId;
     private String userName;
     private String userPhotoUrl;
     private String content;
     private long timestamp;
-    private String commentImageUrl;
+    private String commentImageUrl; // URL da imagem anexada ao comentário
 
+    // Construtor vazio necessário para o Firebase
     public Comment() { }
 
     public Comment(String userId, String userName, String userPhotoUrl, String content, long timestamp, String commentImageUrl) {
@@ -21,6 +28,8 @@ public class Comment {
     }
 
     // Getters e Setters
+
+    @Exclude // O ID não precisa ser gravado no Firestore, pois já é o nome do documento
     public String getCommentId() { return commentId; }
     public void setCommentId(String commentId) { this.commentId = commentId; }
 
