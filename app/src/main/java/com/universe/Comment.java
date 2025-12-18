@@ -1,32 +1,44 @@
 package com.universe;
 
 public class Comment {
+    private String commentId; // ID do documento no Firestore
     private String userId;
     private String userName;
+    private String userPhotoUrl;
     private String content;
     private long timestamp;
     private String commentImageUrl;
 
-    public Comment() {
-        // Construtor vazio obrigatório para o Firebase
-    }
+    public Comment() { }
 
-    // Construtor Atualizado (recebe agora o commentImageUrl no fim)
-    public Comment(String userId, String userName, String content, long timestamp, String commentImageUrl) {
+    public Comment(String userId, String userName, String userPhotoUrl, String content, long timestamp, String commentImageUrl) {
         this.userId = userId;
         this.userName = userName;
+        this.userPhotoUrl = userPhotoUrl;
         this.content = content;
         this.timestamp = timestamp;
         this.commentImageUrl = commentImageUrl;
     }
 
-    // Getters
-    public String getUserId() { return userId; }
-    public String getUserName() { return userName; }
-    public String getContent() { return content; }
-    public long getTimestamp() { return timestamp; }
+    // Getters e Setters
+    public String getCommentId() { return commentId; }
+    public void setCommentId(String commentId) { this.commentId = commentId; }
 
-    // Novo Getter e Setter para a imagem
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
+
+    public String getUserPhotoUrl() { return userPhotoUrl; }
+    public void setUserPhotoUrl(String userPhotoUrl) { this.userPhotoUrl = userPhotoUrl; }
+
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+
+    public long getTimestamp() { return timestamp; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
     public String getCommentImageUrl() { return commentImageUrl; }
     public void setCommentImageUrl(String commentImageUrl) { this.commentImageUrl = commentImageUrl; }
 }

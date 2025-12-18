@@ -1,7 +1,6 @@
 package com.universe;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -12,12 +11,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -46,14 +43,14 @@ public class CommentsActivity extends AppCompatActivity {
 
     // UI - Header (Dono do Post)
     private ImageView headerProfileImage;
-    private TextView headerName, headerCourse, headerFollowers, headerFollowing;
+    private TextView headerName, headerCourse;
     private Button btnHeaderFollow;
 
     // UI - Preview de Imagem
     private RelativeLayout commentImagePreviewContainer;
     private ImageView commentImagePreview;
 
-    // UI - Responder (Reply)
+    // UI - Responder / Editar (Overlay)
     private RelativeLayout replyContainer;
     private TextView txtReplyingTo;
     private ImageButton btnCloseReply;
@@ -70,6 +67,9 @@ public class CommentsActivity extends AppCompatActivity {
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<String> mGetContent;
 
+    // Estado de Edição
+    private String idComentarioEdicao = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,18 +85,16 @@ public class CommentsActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         storage = FirebaseStorage.getInstance();
 
-        // 1. Ligar Componentes UI
+        // 1. Inicializar UI
         ligarComponentes();
 
-        // 2. Configurar Lista com Listener de Resposta
+        // 2. Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentList = new ArrayList<>();
-
-        // Passamos o listener: Quando clicam em "Responder" no adapter, executa o código aqui
         adapter = new CommentsAdapter(commentList, username -> ativarModoResposta(username));
         recyclerView.setAdapter(adapter);
 
-        // 3. Configurar Galeria
+        // 3. Configurar Seletor de Imagem
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
             if (uri != null) {
                 selectedImageUri = uri;
@@ -105,18 +103,11 @@ public class CommentsActivity extends AppCompatActivity {
             }
         });
 
-        // 4. Configurar Cliques Básicos
+        // 4. Listeners de Cliques
         btnBack.setOnClickListener(v -> finish());
         btnAttach.setOnClickListener(v -> mGetContent.launch("image/*"));
         btnRemoveImage.setOnClickListener(v -> limparImagemSelecionada());
-
-        // Fechar modo de resposta
-        btnCloseReply.setOnClickListener(v -> {
-            replyContainer.setVisibility(View.GONE);
-            inputComment.setText("");
-        });
-
-        // 5. Configurar Envio (Botão + Teclado)
+        btnCloseReply.setOnClickListener(v -> cancelarEdicaoOuResposta());
         btnSend.setOnClickListener(v -> prepararEnvio());
 
         inputComment.setOnEditorActionListener((v, actionId, event) -> {
@@ -127,33 +118,27 @@ public class CommentsActivity extends AppCompatActivity {
             return false;
         });
 
-        // 6. Carregar Dados
-        carregarDadosDoPost(); // Preenche o cabeçalho
-        carregarComentarios(); // Preenche a lista
+        // 5. Carregar Dados Iniciais
+        carregarDadosDoPost();
+        carregarComentarios();
     }
 
     private void ligarComponentes() {
-        // Input
         inputComment = findViewById(R.id.inputComment);
         btnSend = findViewById(R.id.btnSendComment);
         btnBack = findViewById(R.id.btnBackComments);
         btnAttach = findViewById(R.id.btnAttach);
         recyclerView = findViewById(R.id.recyclerComments);
 
-        // Header
         headerProfileImage = findViewById(R.id.publicProfileImage);
         headerName = findViewById(R.id.publicProfileName);
         headerCourse = findViewById(R.id.publicProfileCourse);
-        headerFollowers = findViewById(R.id.publicFollowersCount);
-        headerFollowing = findViewById(R.id.publicFollowingCount);
         btnHeaderFollow = findViewById(R.id.btnFollowProfile);
 
-        // Preview Imagem
         commentImagePreviewContainer = findViewById(R.id.commentImagePreviewContainer);
         commentImagePreview = findViewById(R.id.commentImagePreview);
         btnRemoveImage = findViewById(R.id.btnRemoveCommentImage);
 
-        // Reply
         replyContainer = findViewById(R.id.replyContainer);
         txtReplyingTo = findViewById(R.id.txtReplyingTo);
         btnCloseReply = findViewById(R.id.btnCloseReply);
@@ -162,7 +147,6 @@ public class CommentsActivity extends AppCompatActivity {
     // --- LÓGICA DE DADOS ---
 
     private void carregarDadosDoPost() {
-        // Primeiro buscamos o Post para saber quem é o autor
         db.collection("posts").document(postId).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
                 Post post = doc.toObject(Post.class);
@@ -181,16 +165,13 @@ public class CommentsActivity extends AppCompatActivity {
                 if (user != null) {
                     headerName.setText(user.getNome());
                     headerCourse.setText(user.getCurso());
-
                     if (user.getPhotoUrl() != null && !user.getPhotoUrl().isEmpty()) {
                         Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(headerProfileImage);
                     }
-
                 }
             }
         });
 
-        // Esconder botão seguir se for eu mesmo
         if (userId.equals(mAuth.getCurrentUser().getUid())) {
             btnHeaderFollow.setVisibility(View.GONE);
         }
@@ -204,7 +185,11 @@ public class CommentsActivity extends AppCompatActivity {
                     if (value != null) {
                         commentList.clear();
                         for (DocumentSnapshot doc : value.getDocuments()) {
-                            commentList.add(doc.toObject(Comment.class));
+                            Comment comment = doc.toObject(Comment.class);
+                            if (comment != null) {
+                                comment.setCommentId(doc.getId()); // Essencial para editar/apagar
+                                commentList.add(comment);
+                            }
                         }
                         adapter.notifyDataSetChanged();
                         if (commentList.size() > 0) {
@@ -216,18 +201,50 @@ public class CommentsActivity extends AppCompatActivity {
 
     // --- LÓGICA DE INTERAÇÃO ---
 
+    public void prepararEdicaoComentario(Comment comment) {
+        idComentarioEdicao = comment.getCommentId();
+        replyContainer.setVisibility(View.VISIBLE);
+        txtReplyingTo.setText("A editar o teu comentário...");
+        inputComment.setText(comment.getContent());
+        inputComment.requestFocus();
+
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
+
+        btnSend.setImageResource(android.R.drawable.ic_menu_save);
+        btnAttach.setVisibility(View.GONE);
+    }
+
     private void ativarModoResposta(String username) {
         replyContainer.setVisibility(View.VISIBLE);
         txtReplyingTo.setText("A responder a @" + username);
-
-        String mention = "@" + username + " ";
-        inputComment.setText(mention);
+        inputComment.setText("@" + username + " ");
         inputComment.setSelection(inputComment.getText().length());
-
-        // Abrir teclado
         inputComment.requestFocus();
+
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    private void cancelarEdicaoOuResposta() {
+        idComentarioEdicao = null;
+        replyContainer.setVisibility(View.GONE);
+        inputComment.setText("");
+        btnSend.setImageResource(R.drawable.ic_send);
+        btnAttach.setVisibility(View.VISIBLE);
+        limparImagemSelecionada();
+    }
+
+    public void apagarComentario(String commentId, int position) {
+        db.collection("posts").document(postId)
+                .collection("comments").document(commentId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // Notifica o adapter para remover o item localmente com animação correta
+                    if (adapter != null) {
+                        adapter.removerItemDaLista(position);
+                    }
+                });
     }
 
     private void limparImagemSelecionada() {
@@ -238,22 +255,17 @@ public class CommentsActivity extends AppCompatActivity {
 
     private void prepararEnvio() {
         String texto = inputComment.getText().toString().trim();
-
         if (TextUtils.isEmpty(texto) && selectedImageUri == null) return;
 
-        // Reset UI
-        inputComment.setText("");
-        limparImagemSelecionada();
-        replyContainer.setVisibility(View.GONE); // Fecha o modo resposta
-
-        // Fechar teclado
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(inputComment.getWindowToken(), 0);
-
-        if (selectedImageUri != null) {
-            uploadImageAndSend(texto, selectedImageUri); // A imagem na variavel local seria melhor, mas aqui simplifico
-        } else {
+        if (idComentarioEdicao != null) {
             enviarComentarioFinal(texto, null);
+        } else {
+            Uri imageToUpload = selectedImageUri;
+            if (imageToUpload != null) {
+                uploadImageAndSend(texto, imageToUpload);
+            } else {
+                enviarComentarioFinal(texto, null);
+            }
         }
     }
 
@@ -269,31 +281,31 @@ public class CommentsActivity extends AppCompatActivity {
         );
     }
 
-    private void enviarComentarioFinal(String texto, String imageUrl) {
+    private void enviarComentarioFinal(String texto, String commentImageUrl) {
         String uid = mAuth.getCurrentUser().getUid();
 
-        db.collection("users").document(uid).get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                User user = documentSnapshot.toObject(User.class);
+        if (idComentarioEdicao != null) {
+            db.collection("posts").document(postId)
+                    .collection("comments").document(idComentarioEdicao)
+                    .update("content", texto)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
+                        cancelarEdicaoOuResposta();
+                    });
+        } else {
+            db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
+                User user = doc.toObject(User.class);
                 if (user != null) {
-                    Comment comment = new Comment(
-                            uid,
-                            user.getNome(),
-                            texto,
-                            System.currentTimeMillis(),
-                            imageUrl
-                    );
-
+                    String userPhoto = user.getPhotoUrl() != null ? user.getPhotoUrl() : "";
+                    Comment comment = new Comment(uid, user.getNome(), userPhoto, texto, System.currentTimeMillis(), commentImageUrl);
                     db.collection("posts").document(postId).collection("comments").add(comment);
-
-                    // --- ENVIAR NOTIFICAÇÃO ---
                     enviarNotificacaoComment(postAuthorId);
+                    cancelarEdicaoOuResposta();
                 }
-            }
-        });
+            });
+        }
     }
 
-    // --- NOTIFICAÇÃO ---
     private void enviarNotificacaoComment(String donoDoPostId) {
         if (donoDoPostId == null || donoDoPostId.equals(mAuth.getCurrentUser().getUid())) return;
 
@@ -302,13 +314,14 @@ public class CommentsActivity extends AppCompatActivity {
             if (eu != null) {
                 Map<String, Object> notifMap = new HashMap<>();
                 notifMap.put("targetUserId", donoDoPostId);
-                notifMap.put("fromUserId", eu.getUid() != null ? eu.getUid() : mAuth.getCurrentUser().getUid());
+                notifMap.put("fromUserId", mAuth.getCurrentUser().getUid());
                 notifMap.put("fromUserName", eu.getNome());
                 notifMap.put("fromUserPhoto", eu.getPhotoUrl());
                 notifMap.put("type", "comment");
                 notifMap.put("message", "comentou a tua publicação");
                 notifMap.put("postId", postId);
                 notifMap.put("timestamp", System.currentTimeMillis());
+                notifMap.put("read", false);
 
                 db.collection("notifications").add(notifMap);
             }

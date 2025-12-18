@@ -45,6 +45,17 @@
         app:layout_constraintStart_toEndOf="@id/commentUser"
         app:layout_constraintBaseline_toBaselineOf="@id/commentUser" />
 
+    <ImageButton
+        android:id="@+id/btnMoreOptionsComment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_more_vert"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
+        app:tint="?android:attr/textColorPrimary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/commentContent"
         android:layout_width="0dp"
@@ -54,7 +65,7 @@
         android:textColor="?android:attr/textColorPrimary"
         android:layout_marginTop="4dp"
         app:layout_constraintStart_toStartOf="@id/commentUser"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnMoreOptionsComment"
         app:layout_constraintTop_toBottomOf="@id/commentUser" />
 
     <ImageView

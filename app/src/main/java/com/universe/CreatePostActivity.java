@@ -8,11 +8,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.RelativeLayout; // Importante para o container
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -49,6 +47,9 @@ public class CreatePostActivity extends AppCompatActivity {
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<String> mGetContent;
 
+    // VARIÁVEIS PARA EDIÇÃO
+    private String editPostId = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,105 +64,63 @@ public class CreatePostActivity extends AppCompatActivity {
         inputPostContent = findViewById(R.id.inputPostContent);
         btnPublish = findViewById(R.id.btnPublish);
         btnSelectPhoto = findViewById(R.id.btnAddImage);
-
-        // Dados do User (Topo)
         currentUserName = findViewById(R.id.currentUserName);
-        currentUserImage = findViewById(R.id.currentUserImage); // Faltava inicializar isto!
-
-        // Componentes da Imagem (Preview)
+        currentUserImage = findViewById(R.id.currentUserImage);
         ImageButton btnBack = findViewById(R.id.btnCloseCreatePost);
         imagePreview = findViewById(R.id.imagePreview);
         btnRemoveImage = findViewById(R.id.btnRemoveImage);
 
-        // Botão Voltar
+        // --- VERIFICAÇÃO DE MODO (EDIÇÃO OU CRIAÇÃO) ---
+        editPostId = getIntent().getStringExtra("editPostId");
+        String contentParaEditar = getIntent().getStringExtra("currentContent");
+
+        if (editPostId != null) {
+            inputPostContent.setText(contentParaEditar);
+            btnPublish.setText("Atualizar");
+            btnSelectPhoto.setVisibility(View.GONE); // Desativar troca de foto na edição (opcional)
+        }
+
         btnBack.setOnClickListener(v -> finish());
 
-        // --- 1. CARREGAR DADOS DO UTILIZADOR (NOME E FOTO) ---
         carregarDadosUtilizador();
 
-        // --- 2. CONFIGURAR A GALERIA ---
+        // Configurar Galeria
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(),
-                new ActivityResultCallback<Uri>() {
-                    @Override
-                    public void onActivityResult(Uri uri) {
-                        if (uri != null) {
-                            selectedImageUri = uri;
-                            imagePreview.setImageURI(uri);
-
-                            // Mostrar a imagem e o botão de remover
-                            imagePreview.setVisibility(View.VISIBLE);
-                            btnRemoveImage.setVisibility(View.VISIBLE);
-                        }
+                uri -> {
+                    if (uri != null) {
+                        selectedImageUri = uri;
+                        imagePreview.setImageURI(uri);
+                        imagePreview.setVisibility(View.VISIBLE);
+                        btnRemoveImage.setVisibility(View.VISIBLE);
                     }
                 });
 
-        // Clique para abrir galeria
         btnSelectPhoto.setOnClickListener(v -> mGetContent.launch("image/*"));
 
-        // Clique para remover imagem
         btnRemoveImage.setOnClickListener(v -> {
             selectedImageUri = null;
-            imagePreview.setImageURI(null);
-
-            // Esconder a imagem e o botão de remover
             imagePreview.setVisibility(View.GONE);
             btnRemoveImage.setVisibility(View.GONE);
         });
 
-        // Configurar Botão Publicar
         btnPublish.setOnClickListener(v -> prepararPublicacao());
     }
 
-    // --- Metodo para carregar perfil ---
     private void carregarDadosUtilizador() {
         if (mAuth.getCurrentUser() != null) {
             String uid = mAuth.getCurrentUser().getUid();
-            Uri authPhotoUrl = mAuth.getCurrentUser().getPhotoUrl(); // 1. Tentar obter do Auth
 
-            // Se existir no Auth, carrega imediatamente
-            if (authPhotoUrl != null) {
-                Glide.with(CreatePostActivity.this)
-                        .load(authPhotoUrl)
-                        .circleCrop()
-                        .into(currentUserImage);
-            }
-
-            // Vai à base de dados confirmar (pode haver uma foto mais recente lá)
             db.collection("users").document(uid).get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
-                            // Carregar Nome
                             String nome = documentSnapshot.getString("nome");
-                            if (nome == null) nome = documentSnapshot.getString("username"); // Tenta username também
-                            if (nome != null) {
-                                currentUserName.setText(nome);
-                            }
+                            if (nome != null) currentUserName.setText(nome);
 
-                            // 2. Tentar encontrar a foto no Firestore com VÁRIOS nomes
-                            String firestorePhoto = documentSnapshot.getString("photoUrl");
-                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("profileImage");
-                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("imagem");
-                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("image");
-                            if (firestorePhoto == null) firestorePhoto = documentSnapshot.getString("profileUrl");
-
-                            // Se encontrou no Firestore, usa essa (sobrescreve a do Auth se existir)
-                            if (firestorePhoto != null && !firestorePhoto.isEmpty()) {
-                                Glide.with(CreatePostActivity.this)
-                                        .load(firestorePhoto)
-                                        .circleCrop()
-                                        .placeholder(R.drawable.circle_bg)
-                                        .into(currentUserImage);
-                            } else {
-                                // DEBUG: Se não encontrou no Firestore e também não tinha no Auth
-                                if (authPhotoUrl == null) {
-                                    // Podes comentar esta linha depois de testar
-                                    // Toast.makeText(CreatePostActivity.this, "Aviso: Nenhuma foto encontrada na BD", Toast.LENGTH_SHORT).show();
-                                }
+                            String photo = documentSnapshot.getString("photoUrl");
+                            if (photo != null && !photo.isEmpty()) {
+                                Glide.with(this).load(photo).circleCrop().into(currentUserImage);
                             }
                         }
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(CreatePostActivity.this, "Erro de ligação à BD.", Toast.LENGTH_SHORT).show();
                     });
         }
     }
@@ -169,117 +128,96 @@ public class CreatePostActivity extends AppCompatActivity {
     private void prepararPublicacao() {
         String content = inputPostContent.getText().toString().trim();
 
-        // Só bloqueia se não houver texto E não houver imagem
         if (TextUtils.isEmpty(content) && selectedImageUri == null) {
-            inputPostContent.setError("Escreve algo ou adiciona uma foto!");
+            Toast.makeText(this, "Escreve algo!", Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnPublish.setEnabled(false);
-        btnPublish.setText("A publicar...");
+        btnPublish.setText(editPostId != null ? "A atualizar..." : "A publicar...");
 
-        if (selectedImageUri != null) {
-            fazerUploadImagem(content);
+        if (editPostId != null) {
+            // MODO EDIÇÃO: Atualiza apenas o texto diretamente no post original
+            atualizarPostExistente(content);
         } else {
-            buscarDadosUserEGuardar(content, null);
+            // MODO CRIAÇÃO: Segue o fluxo normal
+            if (selectedImageUri != null) {
+                fazerUploadImagem(content);
+            } else {
+                buscarDadosUserEGuardar(content, null);
+            }
         }
     }
 
-    private void fazerUploadImagem(String content) {
-        if (mAuth.getCurrentUser() == null) return;
+    private void atualizarPostExistente(String novoTexto) {
+        db.collection("posts").document(editPostId)
+                .update("content", novoTexto)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Publicação atualizada!", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    btnPublish.setEnabled(true);
+                    btnPublish.setText("Atualizar");
+                    Toast.makeText(this, "Erro ao atualizar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
 
+    // --- OS MÉTODOS ABAIXO SÃO PARA CRIAÇÃO DE NOVOS POSTS ---
+
+    private void fazerUploadImagem(String content) {
         String uid = mAuth.getCurrentUser().getUid();
         String fileName = "post_images/" + uid + "/" + UUID.randomUUID().toString() + ".jpg";
-
         StorageReference ref = storage.getReference().child(fileName);
 
         ref.putFile(selectedImageUri)
-                .addOnSuccessListener(taskSnapshot -> {
-                    ref.getDownloadUrl().addOnSuccessListener(uri -> {
-                        String downloadUrl = uri.toString();
-                        buscarDadosUserEGuardar(content, downloadUrl);
-                    });
-                })
+                .addOnSuccessListener(taskSnapshot -> ref.getDownloadUrl().addOnSuccessListener(uri -> {
+                    buscarDadosUserEGuardar(content, uri.toString());
+                }))
                 .addOnFailureListener(e -> {
-                    Toast.makeText(CreatePostActivity.this, "Erro ao enviar imagem: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     btnPublish.setEnabled(true);
                     btnPublish.setText("Publicar");
                 });
     }
 
     private void buscarDadosUserEGuardar(String content, String imageUrl) {
-        if (mAuth.getCurrentUser() == null) return;
-
         String uid = mAuth.getCurrentUser().getUid();
         String email = mAuth.getCurrentUser().getEmail();
 
-        String dominioTemp = "geral";
-        if (email != null && email.contains("@")) {
-            dominioTemp = email.substring(email.indexOf("@") + 1);
-        }
-        final String universityDomain = dominioTemp;
+        String universityDomain = (email != null && email.contains("@")) ?
+                email.substring(email.indexOf("@") + 1) : "geral";
 
         int selectedTab = getIntent().getIntExtra("selectedTab", 0);
-        String type;
-        if (selectedTab == 1) {
-            type = "uni";
-        } else {
-            type = "global";
-        }
-        final String postTypeFinal = type;
+        String postTypeFinal = (selectedTab == 1) ? "uni" : "global";
 
-        db.collection("users").document(uid).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
+        db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
+            if (doc.exists()) {
+                String nomeAutor = doc.getString("nome");
+                String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                long timestamp = System.currentTimeMillis();
 
-                        String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                        long timestamp = System.currentTimeMillis();
-                        String nomeAutor = (user != null && user.getNome() != null) ? user.getNome() : "Anónimo";
+                Post novoPost = new Post(
+                        uid,
+                        nomeAutor != null ? nomeAutor : "Anónimo",
+                        content,
+                        dataHora,
+                        timestamp,
+                        imageUrl,
+                        universityDomain,
+                        postTypeFinal
+                );
 
-                        // Tentar obter a foto do objeto User também, caso exista
-                        String userPhotoUrl = null;
-                        //userPhotoUrl = user.getphotoUrl(); // Se tiveres este método no User.java
-
-                        Post novoPost = new Post(
-                                uid,
-                                nomeAutor,
-                                content,
-                                dataHora,
-                                timestamp,
-                                imageUrl,
-                                universityDomain,
-                                postTypeFinal
-                        );
-
-                        guardarNoFirestore(novoPost);
-
-                    } else {
-                        btnPublish.setEnabled(true);
-                        btnPublish.setText("Publicar");
-                        Toast.makeText(CreatePostActivity.this, "Erro: Utilizador não encontrado.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(CreatePostActivity.this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    btnPublish.setEnabled(true);
-                    btnPublish.setText("Publicar");
-                });
+                guardarNoFirestore(novoPost);
+            }
+        });
     }
 
     private void guardarNoFirestore(Post post) {
         db.collection("posts").add(post)
                 .addOnSuccessListener(documentReference -> {
-                    String postId = documentReference.getId();
-                    documentReference.update("postId", postId);
-
-                    Toast.makeText(CreatePostActivity.this, "Publicado com sucesso!", Toast.LENGTH_SHORT).show();
+                    documentReference.update("postId", documentReference.getId());
+                    Toast.makeText(this, "Publicado!", Toast.LENGTH_SHORT).show();
                     finish();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(CreatePostActivity.this, "Erro ao publicar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    btnPublish.setEnabled(true);
-                    btnPublish.setText("Publicar");
                 });
     }
 }

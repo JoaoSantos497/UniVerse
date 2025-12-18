@@ -180,7 +180,7 @@
                 android:id="@+id/btnSendComment"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_send"
+                android:src="@drawable/ic_send"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 app:tint="?attr/colorPrimary"/>
         </LinearLayout>
