@@ -14,7 +14,6 @@
         android:elevation="4dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingBottom="16dp"
@@ -103,6 +102,43 @@
             android:text="Utilizadores Bloqueados"
             android:textSize="16sp"
             android:textColor="?android:attr/textColorPrimary"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/btnTheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?android:attr/colorBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_theme"
+            android:layout_marginEnd="16dp"
+            android:alpha="0.8"
+            app:tint="?android:attr/textColorPrimary"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Tema da Aplicação"
+            android:textSize="16sp"
+            android:textColor="?android:attr/textColorPrimary"/>
+
+        <TextView
+            android:id="@+id/txtThemeStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Predefenido do Sistema"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorSecondary"/>
     </LinearLayout>
 
     <View
