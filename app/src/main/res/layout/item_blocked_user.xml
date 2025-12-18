@@ -2,34 +2,40 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
-    android:paddingBottom="16dp"
-    android:paddingTop="30dp">
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground">
 
     <ImageView
         android:id="@+id/blockedUserImage"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@drawable/circle_bg"/>
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:src="@drawable/circle_bg"
+        android:scaleType="centerCrop"/>
 
     <TextView
         android:id="@+id/blockedUserName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="Nome"
+        android:text="Nome do Utilizador"
         android:textSize="16sp"
-        android:layout_marginStart="12dp"/>
+        android:textStyle="bold"
+        android:layout_marginStart="16dp"
+        android:textColor="?android:attr/textColorPrimary"/>
 
     <Button
         android:id="@+id/btnUnblock"
         android:layout_width="wrap_content"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
         android:text="Desbloquear"
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:backgroundTint="#D32F2F"
-        android:textColor="#FFFFFF"/>
+        android:textColor="#FFFFFF"
+        android:paddingHorizontal="12dp"
+        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+        android:textAllCaps="false"/>
+
 </LinearLayout>

@@ -13,6 +13,7 @@ public class FeedPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
+        // Mantemos apenas as duas abas solicitadas
         if (position == 0) {
             return FeedTabFragment.newInstance("global");
         } else {
@@ -22,6 +23,6 @@ public class FeedPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 2; // Temos 2 abas
+        return 2; // Apenas Global e Uni
     }
 }

@@ -20,7 +20,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     // Variáveis para o Tema
     private TextView txtThemeStatus;
-    private int selectedThemeOption; // 0=Sistema, 1=Claro, 2=Escuro
+    private int selectedThemeOption;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

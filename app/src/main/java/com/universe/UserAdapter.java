@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -19,13 +18,16 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
@@ -34,14 +36,34 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private String myUid;
     private FirebaseFirestore db;
     private boolean mostrarBotaoSeguir;
+    private Set<String> bloqueadosIds = new HashSet<>(); // Lista interna de bloqueados
 
     public UserAdapter(List<User> userList, boolean mostrarBotaoSeguir) {
         this.userList = userList;
         this.mostrarBotaoSeguir = mostrarBotaoSeguir;
+
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            this.db = FirebaseFirestore.getInstance();
+            // Inicia a escuta ativa da lista de bloqueados
+            carregarBloqueados();
         }
-        this.db = FirebaseFirestore.getInstance();
+    }
+
+    private void carregarBloqueados() {
+        if (myUid == null) return;
+
+        db.collection("users").document(myUid).collection("blocked")
+                .addSnapshotListener((value, error) -> {
+                    if (value != null) {
+                        bloqueadosIds.clear();
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            bloqueadosIds.add(doc.getId());
+                        }
+                        // Notifica o adapter para esconder utilizadores recém-bloqueados
+                        notifyDataSetChanged();
+                    }
+                });
     }
 
     @NonNull
@@ -59,6 +81,18 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
         if (targetUid == null) return;
 
+        // --- LÓGICA DE FILTRAGEM NA UI ---
+        // Esconde o item se o utilizador estiver bloqueado ou se for o próprio utilizador
+        if (bloqueadosIds.contains(targetUid) || targetUid.equals(myUid)) {
+            holder.itemView.setVisibility(View.GONE);
+            holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(0, 0));
+            return;
+        } else {
+            holder.itemView.setVisibility(View.VISIBLE);
+            holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+
         holder.txtName.setText(user.getNome() != null ? user.getNome() : "Utilizador");
         holder.txtUsername.setText(user.getUsername() != null ? "@" + user.getUsername() : "");
 
@@ -68,12 +102,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .placeholder(R.drawable.circle_bg)
                 .into(holder.imgAvatar);
 
-        // Lógica de Visibilidade: Esconde o botão se for o meu próprio perfil ou se desativado
-        if (!mostrarBotaoSeguir || targetUid.equals(myUid)) {
+        // Configuração do botão Seguir
+        if (!mostrarBotaoSeguir) {
             holder.btnSeguir.setVisibility(View.GONE);
         } else {
             holder.btnSeguir.setVisibility(View.VISIBLE);
-            holder.btnSeguir.setEnabled(false); // Bloqueia até verificar estado
+            holder.btnSeguir.setEnabled(false); // Travado até verificar Firestore
             verificarSeSigo(targetUid, (MaterialButton) holder.btnSeguir);
         }
 
@@ -148,7 +182,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         batch.update(refMe, "followingCount", FieldValue.increment(1));
         batch.update(refTarget, "followersCount", FieldValue.increment(1));
 
-        // Notificação
+        // Enviar notificação de follow
         DocumentReference notifRef = db.collection("notifications").document();
         Map<String, Object> notif = new HashMap<>();
         notif.put("targetUserId", tUid);
@@ -185,7 +219,9 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     }
 
     @Override
-    public int getItemCount() { return userList.size(); }
+    public int getItemCount() {
+        return userList.size();
+    }
 
     public static class UserViewHolder extends RecyclerView.ViewHolder {
         TextView txtName, txtUsername;

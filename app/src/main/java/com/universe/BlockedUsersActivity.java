@@ -1,7 +1,8 @@
 package com.universe;
 
 import android.os.Bundle;
-import android.widget.ImageButton;
+import android.view.View;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -19,6 +20,7 @@ public class BlockedUsersActivity extends AppCompatActivity {
     private BlockedUserAdapter adapter;
     private List<User> blockedList;
     private FirebaseFirestore db;
+    private TextView txtEmpty;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +31,8 @@ public class BlockedUsersActivity extends AppCompatActivity {
         String myId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         recyclerView = findViewById(R.id.recyclerBlockedUsers);
+        txtEmpty = findViewById(R.id.txtEmptyBlocked); // Adiciona este ID no teu XML se quiseres aviso de lista vazia
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         blockedList = new ArrayList<>();
         adapter = new BlockedUserAdapter(blockedList);
@@ -36,21 +40,32 @@ public class BlockedUsersActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBackBlocked).setOnClickListener(v -> finish());
 
-        // Carregar lista de IDs bloqueados
+        carregarBloqueados(myId);
+    }
+
+    private void carregarBloqueados(String myId) {
         db.collection("users").document(myId).collection("blocked")
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
+                    blockedList.clear();
+                    if (querySnapshot.isEmpty()) {
+                        if(txtEmpty != null) txtEmpty.setVisibility(View.VISIBLE);
+                        return;
+                    }
+
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         String blockedId = doc.getId();
 
-                        // Buscar detalhes de cada utilizador bloqueado
+                        // Buscar detalhes de quem está bloqueado
                         db.collection("users").document(blockedId).get()
                                 .addOnSuccessListener(userDoc -> {
                                     if (userDoc.exists()) {
                                         User user = userDoc.toObject(User.class);
-                                        user.setUid(userDoc.getId());
-                                        blockedList.add(user);
-                                        adapter.notifyDataSetChanged();
+                                        if (user != null) {
+                                            user.setUid(userDoc.getId());
+                                            blockedList.add(user);
+                                            adapter.notifyDataSetChanged();
+                                        }
                                     }
                                 });
                     }

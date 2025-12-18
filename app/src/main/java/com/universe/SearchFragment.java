@@ -7,8 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.LinearLayout; // Importante
-import android.widget.ProgressBar; // Importante
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,7 +16,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -32,24 +32,26 @@ public class SearchFragment extends Fragment {
     private UserAdapter userAdapter;
     private List<User> userList;
     private Set<String> userIdsAdicionados;
+    private Set<String> bloqueadosIds; // Nova lista para IDs bloqueados
     private EditText searchBar;
     private FirebaseFirestore db;
+    private String currentUserId;
 
-    // --- NOVAS VARIÁVEIS DE UI ---
     private ProgressBar progressBar;
     private LinearLayout emptyViewSearch;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Certifica-te que o layout tem a ProgressBar e o LinearLayout "emptyViewSearch"
         View view = inflater.inflate(R.layout.fragment_search, container, false);
 
         db = FirebaseFirestore.getInstance();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+
         recyclerView = view.findViewById(R.id.recycler_view_search);
         searchBar = view.findViewById(R.id.search_bar);
-
-        // Ligar os novos componentes
         progressBar = view.findViewById(R.id.searchProgressBar);
         emptyViewSearch = view.findViewById(R.id.emptyViewSearch);
 
@@ -58,8 +60,13 @@ public class SearchFragment extends Fragment {
 
         userList = new ArrayList<>();
         userIdsAdicionados = new HashSet<>();
+        bloqueadosIds = new HashSet<>();
+
         userAdapter = new UserAdapter(userList, false);
         recyclerView.setAdapter(userAdapter);
+
+        // 1. Carregar lista de bloqueados antes de permitir a pesquisa
+        carregarListaBloqueados();
 
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
@@ -69,11 +76,10 @@ public class SearchFragment extends Fragment {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String texto = s.toString().trim();
                 if (texto.isEmpty()) {
-                    // Se apagou tudo, limpa a lista e esconde os avisos
                     userList.clear();
                     userIdsAdicionados.clear();
                     userAdapter.notifyDataSetChanged();
-                    mostrarEstado(false, false); // Esconde tudo
+                    mostrarEstado(false, false);
                 } else {
                     pesquisarUtilizadores(texto);
                 }
@@ -86,15 +92,26 @@ public class SearchFragment extends Fragment {
         return view;
     }
 
-    private void pesquisarUtilizadores(String texto) {
-        // Mostra o loading e limpa a lista atual
-        mostrarEstado(true, false);
+    // Carrega os IDs dos utilizadores que eu bloqueei
+    private void carregarListaBloqueados() {
+        if (currentUserId == null) return;
 
+        db.collection("users").document(currentUserId)
+                .collection("blocked")
+                .addSnapshotListener((value, error) -> {
+                    if (value != null) {
+                        bloqueadosIds.clear();
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            bloqueadosIds.add(doc.getId());
+                        }
+                    }
+                });
+    }
+
+    private void pesquisarUtilizadores(String texto) {
+        mostrarEstado(true, false);
         userList.clear();
         userIdsAdicionados.clear();
-        userAdapter.notifyDataSetChanged();
-
-        // Lógica de pesquisa igual à anterior, mas com gestão do loading no final
 
         if (texto.contains("@")) {
             db.collection("users")
@@ -104,14 +121,9 @@ public class SearchFragment extends Fragment {
                     .get()
                     .addOnSuccessListener(queryDocumentSnapshots -> {
                         processarResultados(queryDocumentSnapshots);
-                        // Como só faz uma query, podemos parar o loading aqui
                         verificarSeVazio();
                     });
         } else {
-            // Pesquisa dupla (Nome e Username)
-            // Precisamos de saber quando AMBAS terminaram para parar o loading.
-            // Solução simples: processamos o nome, e dentro do sucesso do nome, lançamos o username.
-
             db.collection("users")
                     .orderBy("nome")
                     .startAt(texto)
@@ -128,20 +140,25 @@ public class SearchFragment extends Fragment {
                                 .get()
                                 .addOnSuccessListener(snapshotsUser -> {
                                     processarResultados(snapshotsUser);
-
-                                    // Agora que as duas acabaram, verificamos
                                     verificarSeVazio();
                                 });
                     });
         }
     }
 
-    // Método para processar os documentos e adicionar à lista
     private void processarResultados(QuerySnapshot snapshots) {
         for (DocumentSnapshot doc : snapshots) {
+            String uid = doc.getId();
+
+            // FILTRO DE BLOQUEIO: Se o utilizador estiver bloqueado, ignoramos
+            if (bloqueadosIds.contains(uid)) continue;
+
+            // Não mostrar o meu próprio perfil na pesquisa
+            if (uid.equals(currentUserId)) continue;
+
             User user = doc.toObject(User.class);
             if (user != null) {
-                user.setUid(doc.getId());
+                user.setUid(uid);
                 adicionarSemDuplicados(user);
             }
         }
@@ -157,30 +174,23 @@ public class SearchFragment extends Fragment {
         }
     }
 
-    // Controla o que é visível: Loading, Lista ou Mensagem de Vazio
     private void mostrarEstado(boolean isLoading, boolean isEmpty) {
         if (progressBar != null) progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-
         if (isLoading) {
-            // Se está a carregar, esconde o resto
             if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.GONE);
             recyclerView.setVisibility(View.GONE);
         } else {
-            // Se parou de carregar...
             if (isEmpty) {
-                // ... e está vazio -> Mostra aviso
                 if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.VISIBLE);
                 recyclerView.setVisibility(View.GONE);
             } else {
-                // ... e tem dados -> Mostra lista
-                if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.GONE);
+                if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.VISIBLE);
                 recyclerView.setVisibility(View.VISIBLE);
             }
         }
     }
 
     private void verificarSeVazio() {
-        boolean estaVazia = userList.isEmpty();
-        mostrarEstado(false, estaVazia); // Pára o loading e define se mostra lista ou aviso
+        mostrarEstado(false, userList.isEmpty());
     }
 }

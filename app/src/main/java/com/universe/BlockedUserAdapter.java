@@ -28,7 +28,9 @@ public class BlockedUserAdapter extends RecyclerView.Adapter<BlockedUserAdapter.
     public BlockedUserAdapter(List<User> users) {
         this.users = users;
         this.db = FirebaseFirestore.getInstance();
-        this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
     }
 
     @NonNull
@@ -42,23 +44,29 @@ public class BlockedUserAdapter extends RecyclerView.Adapter<BlockedUserAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User user = users.get(position);
-        holder.name.setText(user.getNome());
+        holder.name.setText(user.getNome() != null ? user.getNome() : "Utilizador");
 
-        if (user.getPhotoUrl() != null) {
-            Glide.with(context).load(user.getPhotoUrl()).circleCrop().into(holder.image);
-        }
+        Glide.with(context)
+                .load(user.getPhotoUrl())
+                .circleCrop()
+                .placeholder(R.drawable.circle_bg)
+                .into(holder.image);
 
-        // Lógica de Desbloquear
         holder.btnUnblock.setOnClickListener(v -> {
+            int currentPos = holder.getAdapterPosition();
+            if (currentPos == RecyclerView.NO_POSITION) return;
+
             db.collection("users").document(currentUserId)
                     .collection("blocked").document(user.getUid())
                     .delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(context, "Desbloqueado!", Toast.LENGTH_SHORT).show();
-                        users.remove(position);
-                        notifyItemRemoved(position);
-                        notifyItemRangeChanged(position, users.size());
-                    });
+                        users.remove(currentPos);
+                        notifyItemRemoved(currentPos);
+                        // Importante para atualizar as posições internas do RecyclerView
+                        notifyItemRangeChanged(currentPos, users.size());
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(context, "Erro ao desbloquear", Toast.LENGTH_SHORT).show());
         });
     }
 

@@ -15,15 +15,14 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FeedTabFragment extends Fragment {
 
@@ -35,14 +34,15 @@ public class FeedTabFragment extends Fragment {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private ListenerRegistration postListener;
+    private ListenerRegistration blockListener; // Listener para bloqueios
 
-    private String tabType = "global"; // "global" ou "uni"
+    private String tabType = "global";
     private String myDomain = "";
+    private String myUid = "";
+    private Set<String> blockedIds = new HashSet<>(); // Conjunto de IDs bloqueados
 
-    // Construtor vazio obrigatório
     public FeedTabFragment() { }
 
-    // Metodo para criar nova instância com argumentos
     public static FeedTabFragment newInstance(String type) {
         FeedTabFragment fragment = new FeedTabFragment();
         Bundle args = new Bundle();
@@ -67,30 +67,49 @@ public class FeedTabFragment extends Fragment {
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
+        if (mAuth.getCurrentUser() != null) {
+            myUid = mAuth.getCurrentUser().getUid();
+            String email = mAuth.getCurrentUser().getEmail();
+            if (email != null && email.contains("@")) {
+                myDomain = email.substring(email.indexOf("@") + 1);
+            }
+        }
+
         recyclerView = view.findViewById(R.id.recyclerViewPosts);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
-        // Configurar Lista
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        // Descobrir domínio
-        if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
-            String email = mAuth.getCurrentUser().getEmail();
-            if (email.contains("@")) {
-                myDomain = email.substring(email.indexOf("@") + 1);
-            }
-        }
-
-        // Swipe to Refresh
         swipeRefreshLayout.setOnRefreshListener(this::carregarPosts);
 
-        carregarPosts();
+        // 1. Primeiro escutamos os bloqueios. Quando eles mudarem, os posts recarregam sozinhos.
+        ouvirBloqueios();
 
         return view;
+    }
+
+    private void ouvirBloqueios() {
+        if (myUid.isEmpty()) return;
+
+        // Escuta a sub-coleção de bloqueados em tempo real
+        blockListener = db.collection("users").document(myUid)
+                .collection("blocked")
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) return;
+
+                    blockedIds.clear();
+                    if (value != null) {
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            blockedIds.add(doc.getId());
+                        }
+                    }
+                    // Sempre que a lista de bloqueados mudar, recarregamos o feed
+                    carregarPosts();
+                });
     }
 
     private void carregarPosts() {
@@ -98,12 +117,12 @@ public class FeedTabFragment extends Fragment {
         swipeRefreshLayout.setRefreshing(true);
 
         Query query;
-
         if (tabType.equals("global")) {
             query = db.collection("posts")
                     .whereEqualTo("postType", "global")
                     .orderBy("timestamp", Query.Direction.DESCENDING);
         } else {
+            // Filtra pelo domínio da universidade para a aba "Minha Uni"
             query = db.collection("posts")
                     .whereEqualTo("universityDomain", myDomain)
                     .whereEqualTo("postType", "uni")
@@ -113,20 +132,18 @@ public class FeedTabFragment extends Fragment {
         postListener = query.addSnapshotListener((value, error) -> {
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
 
-            if (error != null) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Erro/Índice: verifica o Logcat", Toast.LENGTH_SHORT).show();
-                }
-                return;
-            }
+            if (error != null) return;
 
             if (value != null) {
                 postList.clear();
                 for (DocumentSnapshot doc : value.getDocuments()) {
                     Post post = doc.toObject(Post.class);
                     if (post != null) {
-                        post.setPostId(doc.getId());
-                        postList.add(post);
+                        // FILTRO DE SEGURANÇA: Bloqueados nunca aparecem em nenhuma aba
+                        if (!blockedIds.contains(post.getUserId())) {
+                            post.setPostId(doc.getId());
+                            postList.add(post);
+                        }
                     }
                 }
                 postAdapter.notifyDataSetChanged();
@@ -138,5 +155,6 @@ public class FeedTabFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (postListener != null) postListener.remove();
+        if (blockListener != null) blockListener.remove();
     }
 }
