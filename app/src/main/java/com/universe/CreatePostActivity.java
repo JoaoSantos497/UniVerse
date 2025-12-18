@@ -31,12 +31,8 @@ public class CreatePostActivity extends AppCompatActivity {
     private EditText inputPostContent;
     private Button btnPublish;
     private ImageButton btnSelectPhoto;
-
-    // UI para a Imagem
     private ImageView imagePreview;
     private ImageButton btnRemoveImage;
-
-    // UI do Utilizador (Topo)
     private TextView currentUserName;
     private ImageView currentUserImage;
 
@@ -55,68 +51,65 @@ public class CreatePostActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_post);
 
-        // Inicializar Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
 
-        // Ligar UI
-        inputPostContent = findViewById(R.id.inputPostContent);
-        btnPublish = findViewById(R.id.btnPublish);
-        btnSelectPhoto = findViewById(R.id.btnAddImage);
-        currentUserName = findViewById(R.id.currentUserName);
-        currentUserImage = findViewById(R.id.currentUserImage);
-        ImageButton btnBack = findViewById(R.id.btnCloseCreatePost);
-        imagePreview = findViewById(R.id.imagePreview);
-        btnRemoveImage = findViewById(R.id.btnRemoveImage);
+        ligarComponentes();
 
-        // --- VERIFICAÇÃO DE MODO (EDIÇÃO OU CRIAÇÃO) ---
+        // --- VERIFICAÇÃO DE MODO ---
         editPostId = getIntent().getStringExtra("editPostId");
         String contentParaEditar = getIntent().getStringExtra("currentContent");
 
         if (editPostId != null) {
             inputPostContent.setText(contentParaEditar);
             btnPublish.setText("Atualizar");
-            btnSelectPhoto.setVisibility(View.GONE); // Desativar troca de foto na edição (opcional)
+            // Na edição, escondemos o botão de foto para não complicar a lógica de substituição no Storage
+            btnSelectPhoto.setVisibility(View.GONE);
         }
 
-        btnBack.setOnClickListener(v -> finish());
-
+        configurarGestoesDeImagem();
         carregarDadosUtilizador();
 
-        // Configurar Galeria
-        mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(),
-                uri -> {
-                    if (uri != null) {
-                        selectedImageUri = uri;
-                        imagePreview.setImageURI(uri);
-                        imagePreview.setVisibility(View.VISIBLE);
-                        btnRemoveImage.setVisibility(View.VISIBLE);
-                    }
-                });
+        btnPublish.setOnClickListener(v -> prepararPublicacao());
+        findViewById(R.id.btnCloseCreatePost).setOnClickListener(v -> finish());
+    }
+
+    private void ligarComponentes() {
+        inputPostContent = findViewById(R.id.inputPostContent);
+        btnPublish = findViewById(R.id.btnPublish);
+        btnSelectPhoto = findViewById(R.id.btnAddImage);
+        currentUserName = findViewById(R.id.currentUserName);
+        currentUserImage = findViewById(R.id.currentUserImage);
+        imagePreview = findViewById(R.id.imagePreview);
+        btnRemoveImage = findViewById(R.id.btnRemoveImage);
+    }
+
+    private void configurarGestoesDeImagem() {
+        mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+            if (uri != null) {
+                selectedImageUri = uri;
+                imagePreview.setImageURI(uri);
+                imagePreview.setVisibility(View.VISIBLE);
+                btnRemoveImage.setVisibility(View.VISIBLE);
+            }
+        });
 
         btnSelectPhoto.setOnClickListener(v -> mGetContent.launch("image/*"));
-
         btnRemoveImage.setOnClickListener(v -> {
             selectedImageUri = null;
             imagePreview.setVisibility(View.GONE);
             btnRemoveImage.setVisibility(View.GONE);
         });
-
-        btnPublish.setOnClickListener(v -> prepararPublicacao());
     }
 
     private void carregarDadosUtilizador() {
         if (mAuth.getCurrentUser() != null) {
-            String uid = mAuth.getCurrentUser().getUid();
-
-            db.collection("users").document(uid).get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            String nome = documentSnapshot.getString("nome");
-                            if (nome != null) currentUserName.setText(nome);
-
-                            String photo = documentSnapshot.getString("photoUrl");
+            db.collection("users").document(mAuth.getCurrentUser().getUid()).get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            currentUserName.setText(doc.getString("nome"));
+                            String photo = doc.getString("photoUrl");
                             if (photo != null && !photo.isEmpty()) {
                                 Glide.with(this).load(photo).circleCrop().into(currentUserImage);
                             }
@@ -127,97 +120,80 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private void prepararPublicacao() {
         String content = inputPostContent.getText().toString().trim();
-
-        if (TextUtils.isEmpty(content) && selectedImageUri == null) {
-            Toast.makeText(this, "Escreve algo!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (TextUtils.isEmpty(content) && selectedImageUri == null) return;
 
         btnPublish.setEnabled(false);
-        btnPublish.setText(editPostId != null ? "A atualizar..." : "A publicar...");
+        btnPublish.setText("A processar...");
 
         if (editPostId != null) {
-            // MODO EDIÇÃO: Atualiza apenas o texto diretamente no post original
-            atualizarPostExistente(content);
+            // Se estamos a editar, apenas atualizamos o conteúdo de texto do documento original
+            atualizarPostNoFirestore(content);
         } else {
-            // MODO CRIAÇÃO: Segue o fluxo normal
+            // Se é novo, verificamos se tem imagem
             if (selectedImageUri != null) {
                 fazerUploadImagem(content);
             } else {
-                buscarDadosUserEGuardar(content, null);
+                criarNovoPost(content, null);
             }
         }
     }
 
-    private void atualizarPostExistente(String novoTexto) {
+    private void atualizarPostNoFirestore(String novoConteudo) {
         db.collection("posts").document(editPostId)
-                .update("content", novoTexto)
+                .update("content", novoConteudo)
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Publicação atualizada!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
                     btnPublish.setEnabled(true);
                     btnPublish.setText("Atualizar");
-                    Toast.makeText(this, "Erro ao atualizar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
-    // --- OS MÉTODOS ABAIXO SÃO PARA CRIAÇÃO DE NOVOS POSTS ---
-
     private void fazerUploadImagem(String content) {
-        String uid = mAuth.getCurrentUser().getUid();
-        String fileName = "post_images/" + uid + "/" + UUID.randomUUID().toString() + ".jpg";
+        String fileName = "post_images/" + mAuth.getCurrentUser().getUid() + "/" + UUID.randomUUID().toString() + ".jpg";
         StorageReference ref = storage.getReference().child(fileName);
 
         ref.putFile(selectedImageUri)
-                .addOnSuccessListener(taskSnapshot -> ref.getDownloadUrl().addOnSuccessListener(uri -> {
-                    buscarDadosUserEGuardar(content, uri.toString());
-                }))
+                .addOnSuccessListener(taskSnapshot ->
+                        ref.getDownloadUrl().addOnSuccessListener(uri -> criarNovoPost(content, uri.toString())))
                 .addOnFailureListener(e -> {
                     btnPublish.setEnabled(true);
                     btnPublish.setText("Publicar");
+                    Toast.makeText(this, "Erro ao carregar imagem", Toast.LENGTH_SHORT).show();
                 });
     }
 
-    private void buscarDadosUserEGuardar(String content, String imageUrl) {
+    private void criarNovoPost(String content, String imageUrl) {
         String uid = mAuth.getCurrentUser().getUid();
         String email = mAuth.getCurrentUser().getEmail();
-
-        String universityDomain = (email != null && email.contains("@")) ?
-                email.substring(email.indexOf("@") + 1) : "geral";
-
+        String domain = (email != null && email.contains("@")) ?email.substring(email.indexOf("@") + 1).toLowerCase() : "geral";
         int selectedTab = getIntent().getIntExtra("selectedTab", 0);
-        String postTypeFinal = (selectedTab == 1) ? "uni" : "global";
+        String postType = (selectedTab == 1) ? "uni" : "global";
 
         db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
-            if (doc.exists()) {
-                String nomeAutor = doc.getString("nome");
-                String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                long timestamp = System.currentTimeMillis();
+            String nome = doc.getString("nome");
+            String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
 
-                Post novoPost = new Post(
-                        uid,
-                        nomeAutor != null ? nomeAutor : "Anónimo",
-                        content,
-                        dataHora,
-                        timestamp,
-                        imageUrl,
-                        universityDomain,
-                        postTypeFinal
-                );
+            // 1. Geramos um ID manualmente ANTES de enviar.
+            // Isso garante que o postId já vai preenchido e o SnapshotListener o deteta logo.
+            String newPostId = db.collection("posts").document().getId();
 
-                guardarNoFirestore(novoPost);
-            }
+            Post post = new Post(uid, nome, content, dataHora, System.currentTimeMillis(), imageUrl, domain, postType);
+            post.setPostId(newPostId); // Define o ID no objeto
+
+            // 2. Usamos .document(newPostId).set() em vez de .add()
+            db.collection("posts").document(newPostId).set(post)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(this, "Publicado!", Toast.LENGTH_SHORT).show();
+                        finish(); // Ao fechar, o FeedTabFragment já terá o post novo via SnapshotListener
+                    })
+                    .addOnFailureListener(e -> {
+                        btnPublish.setEnabled(true);
+                        btnPublish.setText("Publicar");
+                    });
         });
     }
 
-    private void guardarNoFirestore(Post post) {
-        db.collection("posts").add(post)
-                .addOnSuccessListener(documentReference -> {
-                    documentReference.update("postId", documentReference.getId());
-                    Toast.makeText(this, "Publicado!", Toast.LENGTH_SHORT).show();
-                    finish();
-                });
-    }
 }

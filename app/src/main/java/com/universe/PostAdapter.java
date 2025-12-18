@@ -14,7 +14,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -44,8 +43,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
     @Override
     public long getItemId(int position) {
-        String postId = postList.get(position).getPostId();
-        return postId != null ? postId.hashCode() : position;
+        String id = postList.get(position).getPostId();
+        return id != null ? id.hashCode() : position;
     }
 
     @NonNull
@@ -63,102 +62,72 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtUserName.setText(post.getUserName());
         holder.txtContent.setText(post.getContent());
 
-        // Tempo relativo
         long now = System.currentTimeMillis();
-        CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
-                post.getTimestamp(), now, android.text.format.DateUtils.MINUTE_IN_MILLIS);
-        holder.txtDate.setText(relativeTime);
+        holder.txtDate.setText(android.text.format.DateUtils.getRelativeTimeSpanString(
+                post.getTimestamp(), now, android.text.format.DateUtils.MINUTE_IN_MILLIS));
 
         // Imagem do Post
         if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
             holder.postImage.setVisibility(View.VISIBLE);
-            Glide.with(context).load(post.getImageUrl()).centerCrop()
-                    .placeholder(R.drawable.bg_search_outline).into(holder.postImage);
-
-            holder.postImage.setOnClickListener(v -> {
-                Intent intent = new Intent(context, FullScreenImageActivity.class);
-                intent.putExtra("imageUrl", post.getImageUrl());
-                context.startActivity(intent);
-            });
+            Glide.with(context).load(post.getImageUrl()).centerCrop().into(holder.postImage);
         } else {
             holder.postImage.setVisibility(View.GONE);
         }
 
-        // Foto de Perfil (Carregamento eficiente)
-        Glide.with(context).load(post.getUserPhotoUrl())
-                .circleCrop().placeholder(R.drawable.circle_bg).into(holder.imgProfile);
+        // Foto de Perfil (Busca rápida)
+        db.collection("users").document(post.getUserId()).get().addOnSuccessListener(doc -> {
+            if (doc.exists() && context != null) {
+                String url = doc.getString("photoUrl");
+                Glide.with(context).load(url).circleCrop().placeholder(R.drawable.circle_bg).into(holder.imgProfile);
+            }
+        });
 
-        // Menu de Opções
-        holder.btnMoreOptions.setOnClickListener(v -> mostrarMenuOpcoes(v, post, holder.getBindingAdapterPosition()));
+        // Likes em Tempo Real
+        configurarLikesTempoReal(holder, post);
 
-        // Likes e Comentários
-        configurarLikes(holder, post);
+        // Comentários (Contagem e Clique)
         configurarComentarios(holder, post);
 
-        // Ir para Perfil Público
-        holder.imgProfile.setOnClickListener(v -> {
-            if (post.getUserId() != null) {
-                Intent intent = new Intent(context, PublicProfileActivity.class);
-                intent.putExtra("targetUserId", post.getUserId());
-                context.startActivity(intent);
+        // Menu Opções
+        holder.btnMoreOptions.setOnClickListener(v -> {
+            int actualPos = holder.getBindingAdapterPosition();
+            if (actualPos == RecyclerView.NO_POSITION) return;
+
+            PopupMenu popup = new PopupMenu(context, v);
+            if (post.getUserId().equals(currentUserId)) {
+                popup.getMenu().add(0, 1, 0, "Editar");
+                popup.getMenu().add(0, 2, 1, "Apagar");
+            } else {
+                popup.getMenu().add(0, 3, 0, "Denunciar");
             }
+
+            popup.setOnMenuItemClickListener(item -> {
+                if (item.getItemId() == 1) abrirEditor(post);
+                else if (item.getItemId() == 2) confirmarExclusao(post.getPostId(), actualPos);
+                return true;
+            });
+            popup.show();
         });
     }
 
-    private void mostrarMenuOpcoes(View v, Post post, int position) {
-        PopupMenu popup = new PopupMenu(context, v);
-        if (post.getUserId() != null && post.getUserId().equals(currentUserId)) {
-            popup.getMenu().add(0, 1, 0, "Editar Publicação");
-            popup.getMenu().add(0, 2, 1, "Apagar Publicação");
-        } else {
-            popup.getMenu().add(0, 3, 0, "Denunciar Conteúdo");
-        }
+    private void configurarLikesTempoReal(PostViewHolder holder, Post post) {
+        db.collection("posts").document(post.getPostId())
+                .addSnapshotListener((snapshot, e) -> {
+                    if (snapshot != null && snapshot.exists()) {
+                        List<String> likes = (List<String>) snapshot.get("likes");
+                        post.setLikes(likes); // Atualiza o objeto local
 
-        popup.setOnMenuItemClickListener(item -> {
-            switch (item.getItemId()) {
-                case 1: abrirEditorPost(post); return true;
-                case 2: confirmarExclusao(post.getPostId(), position); return true;
-                case 3: denunciarPost(post); return true;
-                default: return false;
-            }
-        });
-        popup.show();
-    }
+                        boolean isLiked = likes != null && likes.contains(currentUserId);
+                        int count = (likes != null) ? likes.size() : 0;
 
-    private void confirmarExclusao(String postId, int position) {
-        new AlertDialog.Builder(context)
-                .setTitle("Eliminar Post")
-                .setMessage("Esta ação não pode ser desfeita.")
-                .setPositiveButton("Eliminar", (dialog, which) -> apagarPostDoFirebase(postId, position))
-                .setNegativeButton("Cancelar", null)
-                .show();
-    }
-
-    private void apagarPostDoFirebase(String postId, int position) {
-        if (postId == null) return;
-
-        db.collection("posts").document(postId).delete()
-                .addOnSuccessListener(aVoid -> {
-                    // Nota: Se usas SnapshotListener no Fragment, ele removerá o item automaticamente.
-                    // Se não usas, mantemos a remoção manual aqui:
-                    if (position >= 0 && position < postList.size()) {
-                        Toast.makeText(context, "Publicação eliminada", Toast.LENGTH_SHORT).show();
+                        holder.txtLike.setText((isLiked ? "❤️ " : "🤍 ") + count);
+                        holder.txtLike.setTextColor(isLiked ? Color.RED : Color.GRAY);
                     }
-                })
-                .addOnFailureListener(e -> Toast.makeText(context, "Erro ao eliminar: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
-
-    private void configurarLikes(PostViewHolder holder, Post post) {
-        List<String> likes = post.getLikes();
-        boolean isLiked = likes != null && likes.contains(currentUserId);
-        int likeCount = (likes != null) ? likes.size() : 0;
-
-        holder.txtLike.setText((isLiked ? "❤️ " : "🤍 ") + likeCount);
-        holder.txtLike.setTextColor(isLiked ? Color.RED : Color.GRAY);
+                });
 
         holder.txtLike.setOnClickListener(v -> {
-            if (post.getPostId() == null) return;
-            if (isLiked) {
+            boolean liked = post.getLikes() != null && post.getLikes().contains(currentUserId);
+            if (liked) {
                 db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
                 db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayUnion(currentUserId));
@@ -167,8 +136,30 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         });
     }
 
+    private void confirmarExclusao(String postId, int position) {
+        new AlertDialog.Builder(context)
+                .setTitle("Apagar Post")
+                .setMessage("Tens a certeza?")
+                .setPositiveButton("Sim", (d, w) -> {
+                    db.collection("posts").document(postId).delete()
+                            .addOnSuccessListener(aVoid -> {
+                                if (position < postList.size()) {
+                                    postList.remove(position);
+                                    notifyItemRemoved(position);
+                                    notifyItemRangeChanged(position, postList.size());
+                                }
+                            });
+                })
+                .setNegativeButton("Não", null).show();
+    }
+
     private void configurarComentarios(PostViewHolder holder, Post post) {
-        // Mostra contagem simplificada. Se quiseres contagem real em tempo real, mantém o SnapshotListener.
+        db.collection("posts").document(post.getPostId()).collection("comments")
+                .addSnapshotListener((value, error) -> {
+                    int count = (value != null) ? value.size() : 0;
+                    holder.txtComment.setText("💬 " + count);
+                });
+
         holder.txtComment.setOnClickListener(v -> {
             Intent intent = new Intent(context, CommentsActivity.class);
             intent.putExtra("postId", post.getPostId());
@@ -176,41 +167,28 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         });
     }
 
-    private void abrirEditorPost(Post post) {
-        Intent intent = new Intent(context, CreatePostActivity.class);
-        intent.putExtra("editPostId", post.getPostId());
-        intent.putExtra("currentContent", post.getContent());
-        context.startActivity(intent);
-    }
-
-    private void denunciarPost(Post post) {
-        Map<String, Object> report = new HashMap<>();
-        report.put("postId", post.getPostId());
-        report.put("reportedBy", currentUserId);
-        report.put("timestamp", System.currentTimeMillis());
-        db.collection("reports").add(report).addOnSuccessListener(doc ->
-                Toast.makeText(context, "Obrigado por denunciares. Vamos analisar.", Toast.LENGTH_SHORT).show());
-    }
-
     private void enviarNotificacaoLike(String targetId, String postId) {
-        if (targetId == null || targetId.equals(currentUserId)) return;
-
-        // Obter nome de quem deu like
+        if (targetId.equals(currentUserId)) return;
         db.collection("users").document(currentUserId).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
-                Map<String, Object> notif = new HashMap<>();
-                notif.put("targetUserId", targetId);
-                notif.put("fromUserId", currentUserId);
-                notif.put("fromUserName", doc.getString("nome"));
-                notif.put("fromUserPhoto", doc.getString("photoUrl"));
-                notif.put("type", "like");
-                notif.put("message", "gostou da tua publicação");
-                notif.put("postId", postId);
-                notif.put("timestamp", System.currentTimeMillis());
-                notif.put("read", false);
-                db.collection("notifications").add(notif);
+                Map<String, Object> n = new HashMap<>();
+                n.put("targetUserId", targetId);
+                n.put("fromUserId", currentUserId);
+                n.put("fromUserName", doc.getString("nome"));
+                n.put("type", "like");
+                n.put("timestamp", System.currentTimeMillis());
+                db.collection("notifications").add(n);
             }
         });
+    }
+
+    private void abrirEditor(Post post) {
+        Intent i = new Intent(context, CreatePostActivity.class);
+        // 1. Enviamos o ID (essencial para não duplicar)
+        i.putExtra("editPostId", post.getPostId());
+        // 2. Enviamos o conteúdo atual para preencher o EditText
+        i.putExtra("currentContent", post.getContent());
+        context.startActivity(i);
     }
 
     @Override

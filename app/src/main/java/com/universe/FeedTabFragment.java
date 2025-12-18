@@ -1,11 +1,10 @@
 package com.universe;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -34,12 +33,12 @@ public class FeedTabFragment extends Fragment {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private ListenerRegistration postListener;
-    private ListenerRegistration blockListener; // Listener para bloqueios
+    private ListenerRegistration blockListener;
 
     private String tabType = "global";
     private String myDomain = "";
     private String myUid = "";
-    private Set<String> blockedIds = new HashSet<>(); // Conjunto de IDs bloqueados
+    private Set<String> blockedIds = new HashSet<>();
 
     public FeedTabFragment() { }
 
@@ -57,16 +56,8 @@ public class FeedTabFragment extends Fragment {
         if (getArguments() != null) {
             tabType = getArguments().getString("TYPE");
         }
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.activity_feed_tab_fragment, container, false);
-
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
-
         if (mAuth.getCurrentUser() != null) {
             myUid = mAuth.getCurrentUser().getUid();
             String email = mAuth.getCurrentUser().getEmail();
@@ -74,28 +65,37 @@ public class FeedTabFragment extends Fragment {
                 myDomain = email.substring(email.indexOf("@") + 1);
             }
         }
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // CORREÇÃO: Certifica-te que o layout aqui é o do fragmento (layout/fragment_feed_tab.xml)
+        View view = inflater.inflate(R.layout.activity_feed_tab_fragment, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerViewPosts);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
-        recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        swipeRefreshLayout.setOnRefreshListener(this::carregarPosts);
+        // O SwipeRefresh agora apenas reinicia os listeners se necessário
+        swipeRefreshLayout.setOnRefreshListener(this::iniciarEscutaRealtime);
 
-        // 1. Primeiro escutamos os bloqueios. Quando eles mudarem, os posts recarregam sozinhos.
-        ouvirBloqueios();
+        // Inicia o fluxo de dados
+        iniciarEscutaRealtime();
 
         return view;
     }
 
-    private void ouvirBloqueios() {
+    private void iniciarEscutaRealtime() {
         if (myUid.isEmpty()) return;
 
-        // Escuta a sub-coleção de bloqueados em tempo real
+        // 1. Escutamos os bloqueios primeiro
+        if (blockListener != null) blockListener.remove();
+
         blockListener = db.collection("users").document(myUid)
                 .collection("blocked")
                 .addSnapshotListener((value, error) -> {
@@ -107,14 +107,13 @@ public class FeedTabFragment extends Fragment {
                             blockedIds.add(doc.getId());
                         }
                     }
-                    // Sempre que a lista de bloqueados mudar, recarregamos o feed
-                    carregarPosts();
+                    // Sempre que a lista de bloqueados mudar, atualizamos os posts
+                    ouvirPosts();
                 });
     }
 
-    private void carregarPosts() {
+    private void ouvirPosts() {
         if (postListener != null) postListener.remove();
-        swipeRefreshLayout.setRefreshing(true);
 
         Query query;
         if (tabType.equals("global")) {
@@ -122,7 +121,6 @@ public class FeedTabFragment extends Fragment {
                     .whereEqualTo("postType", "global")
                     .orderBy("timestamp", Query.Direction.DESCENDING);
         } else {
-            // Filtra pelo domínio da universidade para a aba "Minha Uni"
             query = db.collection("posts")
                     .whereEqualTo("universityDomain", myDomain)
                     .whereEqualTo("postType", "uni")
@@ -131,24 +129,67 @@ public class FeedTabFragment extends Fragment {
 
         postListener = query.addSnapshotListener((value, error) -> {
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-
             if (error != null) return;
 
             if (value != null) {
-                postList.clear();
-                for (DocumentSnapshot doc : value.getDocuments()) {
-                    Post post = doc.toObject(Post.class);
-                    if (post != null) {
-                        // FILTRO DE SEGURANÇA: Bloqueados nunca aparecem em nenhuma aba
-                        if (!blockedIds.contains(post.getUserId())) {
+                // EXPLICAÇÃO: Se a lista estiver vazia (primeira vez), carregamos o snapshot inicial
+                if (postList.isEmpty()) {
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+                        Post post = doc.toObject(Post.class);
+                        if (post != null && !blockedIds.contains(post.getUserId())) {
                             post.setPostId(doc.getId());
                             postList.add(post);
                         }
                     }
+                    postAdapter.notifyDataSetChanged();
+                } else {
+                    // EXPLICAÇÃO: Se a lista já tem itens, processamos APENAS o que mudou
+                    // Isso evita que o refresh duplique tudo
+                    for (com.google.firebase.firestore.DocumentChange dc : value.getDocumentChanges()) {
+                        Post post = dc.getDocument().toObject(Post.class);
+                        if (post == null) continue;
+                        post.setPostId(dc.getDocument().getId());
+
+                        // Ignorar posts de bloqueados
+                        if (blockedIds.contains(post.getUserId())) continue;
+
+                        int oldIndex = dc.getOldIndex();
+                        int newIndex = dc.getNewIndex();
+
+                        switch (dc.getType()) {
+                            case ADDED:
+                                // Verifica se o post já não existe na lista para evitar duplicados "fantasma"
+                                if (!contemPost(post.getPostId())) {
+                                    postList.add(newIndex, post);
+                                    postAdapter.notifyItemInserted(newIndex);
+                                }
+                                break;
+
+                            case MODIFIED:
+                                if (oldIndex == newIndex && oldIndex != -1) {
+                                    postList.set(newIndex, post);
+                                    postAdapter.notifyItemChanged(newIndex);
+                                }
+                                break;
+
+                            case REMOVED:
+                                if (oldIndex != -1 && oldIndex < postList.size()) {
+                                    postList.remove(oldIndex);
+                                    postAdapter.notifyItemRemoved(oldIndex);
+                                }
+                                break;
+                        }
+                    }
                 }
-                postAdapter.notifyDataSetChanged();
             }
         });
+    }
+
+    private boolean contemPost(String id) {
+        for (Post p : postList) {
+            if (p.getPostId() != null && p.getPostId().equals(id)) return true;
+        }
+        return false;
     }
 
     @Override
