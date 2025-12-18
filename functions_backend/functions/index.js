@@ -4,7 +4,6 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 exports.sendNotification = onDocumentCreated("notifications/{notificationId}", async (event) => {
-    // Na v2, os dados estão em event.data
     const data = event.data.data();
 
     if (!data) {
@@ -17,7 +16,6 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
     const fromUserName = data.fromUserName;
     const postId = data.postId;
 
-    // 1. Ir buscar o Token do telemóvel do destinatário
     try {
         const userDoc = await admin.firestore().collection("users").doc(targetUserId).get();
 
@@ -33,7 +31,7 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
             return null;
         }
 
-        // 2. Criar o pacote da notificação
+        // 2. Criar o pacote da notificação com configurações de ALTA PRIORIDADE
         const message = {
             token: fcmToken,
             notification: {
@@ -43,10 +41,29 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
             data: {
                 postId: postId || "",
                 type: data.type || "general"
+            },
+            // Configurações específicas para Android (Essencial para o POP-UP)
+            android: {
+                priority: "high", // Força o envio imediato
+                notification: {
+                    channelId: "notificacoes_universe", // DEVE ser igual ao ID no Java
+                    priority: "high",
+                    sound: "default",
+                    defaultSound: true,
+                    defaultVibrateTimings: true
+                }
+            },
+            // Configurações para manter a prioridade alta em todas as plataformas
+            apns: {
+                payload: {
+                    aps: {
+                        contentAvailable: true,
+                        priority: 10
+                    }
+                }
             }
         };
 
-        // 3. Enviar usando a API moderna (send)
         const response = await admin.messaging().send(message);
         console.log("Notificação enviada com sucesso:", response);
     } catch (error) {
