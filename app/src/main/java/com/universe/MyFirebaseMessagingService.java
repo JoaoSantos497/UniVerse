@@ -23,21 +23,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "FCM_SERVICE";
 
-    /**
-     * Chamado quando um novo token é gerado (instalação nova, limpeza de dados, etc).
-     */
     @Override
     public void onNewToken(@NonNull String token) {
         super.onNewToken(token);
         Log.d(TAG, "Novo token gerado: " + token);
-
-        // Envia para o Firestore para garantir que o servidor tem o "endereço" atualizado
         atualizarTokenNoFirestore(token);
     }
 
-    /**
-     * Chamado quando uma mensagem FCM é recebida com a app em primeiro plano ou background.
-     */
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
@@ -48,22 +40,19 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String corpo = "";
         String postId = "";
 
-        // 1. Tentar obter dados do objeto de Notificação (Título e Corpo)
-        if (remoteMessage.getNotification() != null) {
-            titulo = remoteMessage.getNotification().getTitle();
-            corpo = remoteMessage.getNotification().getBody();
-        }
-
-        // 2. Tentar obter dados do mapa "data" (importante para Cloud Functions)
+        // 1. Prioridade para dados do objeto "data" (enviados pela Cloud Function)
         Map<String, String> data = remoteMessage.getData();
         if (data.size() > 0) {
-            // Se o título/corpo não vieram na "notification", podem vir na "data"
-            if (corpo == null || corpo.isEmpty()) {
-                titulo = data.get("title") != null ? data.get("title") : titulo;
-                corpo = data.get("body") != null ? data.get("body") : "";
-            }
-            // Extrair o ID do post para abrir ao clicar
             postId = data.get("postId");
+            // Se a Cloud Function enviar título/corpo dentro do data:
+            if (data.containsKey("title")) titulo = data.get("title");
+            if (data.containsKey("body")) corpo = data.get("body");
+        }
+
+        // 2. Se não houver no data, tenta o objeto de Notificação padrão
+        if (remoteMessage.getNotification() != null) {
+            if (titulo.equals("UniVerse")) titulo = remoteMessage.getNotification().getTitle();
+            if (corpo == null || corpo.isEmpty()) corpo = remoteMessage.getNotification().getBody();
         }
 
         if (corpo != null && !corpo.isEmpty()) {
@@ -72,44 +61,49 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void enviarNotificacaoLocal(String titulo, String mensagem, String postId) {
-        String channelId = "notificacoes_universe";
+        // MUDAR O ID DO CANAL força o Android a criar novas definições (resolve o problema do pop-up não aparecer)
+        String channelId = "universe_v2";
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // 1. Criar o Canal com IMPORTANCE_HIGH (Crucial para o pop-up)
+        // 1. Criar o Canal com IMPORTANCE_HIGH
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     channelId,
                     "Alertas UniVerse",
-                    NotificationManager.IMPORTANCE_HIGH); // <--- IMPORTANTE
+                    NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("Notificações de interações sociais");
             channel.enableLights(true);
             channel.enableVibration(true);
-            channel.setLockscreenVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC);
+            channel.setVibrationPattern(new long[]{100, 200, 300, 400, 500}); // Padrão de vibração ajuda no pop-up
+            channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);
             }
         }
 
-        // 2. Configurar a Intent
+        // 2. Configurar a Intent para abrir a CommentsActivity
         Intent intent = new Intent(this, CommentsActivity.class);
-        intent.putExtra("postId", postId);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+        if (postId != null) intent.putExtra("postId", postId);
 
-        // 3. Builder com Prioridade Máxima
+        // FLAG_UPDATE_CURRENT é vital para que o postId seja atualizado se receberes 2 notificações
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        // 3. Builder configurado para "Heads-up" (Pop-up no topo)
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.drawable.ic_notifications)
                 .setContentTitle(titulo)
                 .setContentText(mensagem)
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH) // <--- Para versões antigas
-                .setDefaults(NotificationCompat.DEFAULT_ALL)   // Ativa som e vibração padrão
-                .setFullScreenIntent(pendingIntent, false)     // Às vezes ajuda a forçar o pop-up
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)   // Som e vibração padrão do sistema
+                .setVibrate(new long[]{100, 200, 300, 400, 500})
                 .setContentIntent(pendingIntent);
 
         if (notificationManager != null) {
+            // ID único usando o tempo atual evita que uma notificação apague a outra
             notificationManager.notify((int) System.currentTimeMillis(), builder.build());
         }
     }

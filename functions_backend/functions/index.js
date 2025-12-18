@@ -44,9 +44,9 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
             },
             // Configurações específicas para Android (Essencial para o POP-UP)
             android: {
-                priority: "high", // Força o envio imediato
+                priority: "high",
                 notification: {
-                    channelId: "notificacoes_universe", // DEVE ser igual ao ID no Java
+                    channelId: "notificacoes_universe_v2",
                     priority: "high",
                     sound: "default",
                     defaultSound: true,
