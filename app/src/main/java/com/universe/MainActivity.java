@@ -2,9 +2,12 @@ package com.universe;
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate; // <--- IMPORTANTE
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -12,12 +15,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // --- A LINHA MÁGICA ---
-        // Isto obriga a app a olhar para as definições do telemóvel.
-        // Se o telemóvel estiver em Dark Mode, a app muda para Dark Mode.
+        // Forçar Dark Mode a seguir o sistema
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
 
         setContentView(R.layout.activity_main);
+
+        // --- 1. CHAMAR A ATUALIZAÇÃO DO TOKEN ---
+        atualizarTokenFCM();
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
@@ -48,5 +52,19 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
         }
+    }
+
+
+    private void atualizarTokenFCM() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+
+        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
+            String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            if (uid != null) {
+                // Guardamos o token no documento do utilizador no Firestore
+                FirebaseFirestore.getInstance().collection("users").document(uid)
+                        .update("fcmToken", token);
+            }
+        });
     }
 }
