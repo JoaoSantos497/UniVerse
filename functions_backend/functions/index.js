@@ -1,5 +1,5 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
-const { auth } = require("firebase-functions/v1"); // Importação específica da v1
+const { auth } = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 
 if (admin.apps.length === 0) {
@@ -39,8 +39,7 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
     return null;
 });
 
-// --- FUNÇÃO 2: LIMPEZA AUTOMÁTICA (v1) ---
-// Usamos auth.user().onDelete() que é o padrão estável
+// --- FUNÇÃO 2: LIMPEZA AUTOMÁTICA E ATUALIZAÇÃO DE CONTADORES ---
 exports.cleanupUserData = auth.user().onDelete(async (user) => {
     const uid = user.uid;
     const db = admin.firestore();
@@ -49,26 +48,40 @@ exports.cleanupUserData = auth.user().onDelete(async (user) => {
     console.log(`Limpando dados para o utilizador: ${uid}`);
 
     try {
-        // 1. Perfil
+        // 1. Diminuir seguidores de quem o utilizador apagado SEGUIA
+        const followingQuery = await db.collectionGroup("following").where("uid", "==", uid).get();
+        for (const doc of followingQuery.docs) {
+            const userSeguidoRef = doc.ref.parent.parent;
+            if (userSeguidoRef) {
+                // Ajusta o contador no perfil de quem perdeu o seguidor
+                batch.update(userSeguidoRef, { followersCount: admin.firestore.FieldValue.increment(-1) });
+            }
+            batch.delete(doc.ref);
+        }
+
+        // 2. Diminuir "seguindo" de quem SEGUIA o utilizador apagado
+        const followersQuery = await db.collectionGroup("followers").where("uid", "==", uid).get();
+        for (const doc of followersQuery.docs) {
+            const seguidorRef = doc.ref.parent.parent;
+            if (seguidorRef) {
+                // Ajusta o contador no perfil de quem seguia o user apagado
+                batch.update(seguidorRef, { followingCount: admin.firestore.FieldValue.increment(-1) });
+            }
+            batch.delete(doc.ref);
+        }
+
+        // 3. Limpar Posts, Comentários e Notificações do utilizador
+        const colecoesParaLimpar = ["posts", "notifications", "comments"];
+        for (const nomeColl of colecoesParaLimpar) {
+            const query = await db.collection(nomeColl).where("userId", "==", uid).get();
+            query.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // 4. Apagar o perfil do utilizador
         batch.delete(db.collection("users").doc(uid));
 
-        // 2. Posts
-        const posts = await db.collection("posts").where("userId", "==", uid).get();
-        posts.forEach(doc => batch.delete(doc.ref));
-
-        // 3. Notificações
-        const notifications = await db.collection("notifications").where("targetUserId", "==", uid).get();
-        notifications.forEach(doc => batch.delete(doc.ref));
-
-        // 4. Seguidores/Seguindo (Collection Groups)
-        const followers = await db.collectionGroup("followers").where("uid", "==", uid).get();
-        followers.forEach(doc => batch.delete(doc.ref));
-
-        const following = await db.collectionGroup("following").where("uid", "==", uid).get();
-        following.forEach(doc => batch.delete(doc.ref));
-
         await batch.commit();
-        console.log(`Limpeza concluída para o UID: ${uid}`);
+        console.log(`Limpeza e contadores atualizados para o UID: ${uid}`);
     } catch (error) {
         console.error("Erro na limpeza automática:", error);
     }

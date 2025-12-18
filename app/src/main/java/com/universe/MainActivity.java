@@ -1,9 +1,11 @@
 package com.universe;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,6 +17,7 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -31,7 +34,8 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        // --- 1. PEDIR PERMISSÃO (Android 13+) E ATUALIZAR TOKEN ---
+        // --- 1. VERIFICAÇÕES DE SEGURANÇA E NOTIFICAÇÕES ---
+        verificarEstadoConta(); // Verifica se a conta ainda existe
         verificarPermissaoNotificacao();
         atualizarTokenFCM();
 
@@ -64,8 +68,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Tenta recarregar o perfil do utilizador. Se falhar (user-not-found),
+     * significa que a conta foi apagada no console e força o logout.
+     */
+    private void verificarEstadoConta() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            user.reload().addOnFailureListener(e -> {
+                Log.d("AUTH", "Sessão inválida ou conta eliminada. Redirecionando...");
+                FirebaseAuth.getInstance().signOut();
+
+                // Abre o Login e limpa o histórico de ecrãs
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
+    }
+
     private void verificarPermissaoNotificacao() {
-        // No Android 13 (API 33) ou superior, o pop-up só aparece se o user permitir
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
