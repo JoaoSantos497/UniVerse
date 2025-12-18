@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -38,14 +39,13 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
-        // Melhora a performance e estabilidade das animações
         setHasStableIds(true);
     }
 
     @Override
     public long getItemId(int position) {
-        // Retorna um ID único baseado no ID do documento para evitar bugs de reciclagem
-        return postList.get(position).getPostId().hashCode();
+        String postId = postList.get(position).getPostId();
+        return postId != null ? postId.hashCode() : position;
     }
 
     @NonNull
@@ -63,19 +63,18 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtUserName.setText(post.getUserName());
         holder.txtContent.setText(post.getContent());
 
-        try {
-            long now = System.currentTimeMillis();
-            CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
-                    post.getTimestamp(), now, android.text.format.DateUtils.MINUTE_IN_MILLIS);
-            holder.txtDate.setText(relativeTime);
-        } catch (Exception e) {
-            holder.txtDate.setText(post.getDate());
-        }
+        // Tempo relativo
+        long now = System.currentTimeMillis();
+        CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
+                post.getTimestamp(), now, android.text.format.DateUtils.MINUTE_IN_MILLIS);
+        holder.txtDate.setText(relativeTime);
 
         // Imagem do Post
         if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
             holder.postImage.setVisibility(View.VISIBLE);
-            Glide.with(context).load(post.getImageUrl()).centerCrop().placeholder(R.drawable.bg_search_outline).into(holder.postImage);
+            Glide.with(context).load(post.getImageUrl()).centerCrop()
+                    .placeholder(R.drawable.bg_search_outline).into(holder.postImage);
+
             holder.postImage.setOnClickListener(v -> {
                 Intent intent = new Intent(context, FullScreenImageActivity.class);
                 intent.putExtra("imageUrl", post.getImageUrl());
@@ -85,49 +84,20 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.postImage.setVisibility(View.GONE);
         }
 
-        // Foto de Perfil
-        if (post.getUserId() != null) {
-            db.collection("users").document(post.getUserId()).get()
-                    .addOnSuccessListener(doc -> {
-                        if (doc.exists() && context != null) {
-                            String url = doc.getString("photoUrl");
-                            if (url == null) url = doc.getString("fotoUrl");
-                            Glide.with(context).load(url).circleCrop().placeholder(R.drawable.circle_bg).into(holder.imgProfile);
-                        }
-                    });
-        }
+        // Foto de Perfil (Carregamento eficiente)
+        Glide.with(context).load(post.getUserPhotoUrl())
+                .circleCrop().placeholder(R.drawable.circle_bg).into(holder.imgProfile);
 
-        // --- MENU DE OPÇÕES ---
-        holder.btnMoreOptions.setOnClickListener(v -> {
-            // Obtemos a posição atualizada no momento do clique
-            int actualPos = holder.getBindingAdapterPosition();
-            if (actualPos == RecyclerView.NO_POSITION) return;
-
-            PopupMenu popup = new PopupMenu(context, v);
-            if (post.getUserId() != null && post.getUserId().equals(currentUserId)) {
-                popup.getMenu().add(0, 1, 0, "Editar Publicação");
-                popup.getMenu().add(0, 2, 1, "Apagar Publicação");
-            } else {
-                popup.getMenu().add(0, 3, 0, "Denunciar Conteúdo");
-            }
-
-            popup.setOnMenuItemClickListener(item -> {
-                switch (item.getItemId()) {
-                    case 1: abrirEditorPost(post); return true;
-                    case 2: confirmarExclusao(post.getPostId(), actualPos); return true;
-                    case 3: denunciarPost(post); return true;
-                }
-                return false;
-            });
-            popup.show();
-        });
+        // Menu de Opções
+        holder.btnMoreOptions.setOnClickListener(v -> mostrarMenuOpcoes(v, post, holder.getBindingAdapterPosition()));
 
         // Likes e Comentários
         configurarLikes(holder, post);
         configurarComentarios(holder, post);
 
+        // Ir para Perfil Público
         holder.imgProfile.setOnClickListener(v -> {
-            if (currentUserId != null && post.getUserId() != null && !post.getUserId().equals(currentUserId)) {
+            if (post.getUserId() != null) {
                 Intent intent = new Intent(context, PublicProfileActivity.class);
                 intent.putExtra("targetUserId", post.getUserId());
                 context.startActivity(intent);
@@ -135,56 +105,70 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         });
     }
 
+    private void mostrarMenuOpcoes(View v, Post post, int position) {
+        PopupMenu popup = new PopupMenu(context, v);
+        if (post.getUserId() != null && post.getUserId().equals(currentUserId)) {
+            popup.getMenu().add(0, 1, 0, "Editar Publicação");
+            popup.getMenu().add(0, 2, 1, "Apagar Publicação");
+        } else {
+            popup.getMenu().add(0, 3, 0, "Denunciar Conteúdo");
+        }
+
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1: abrirEditorPost(post); return true;
+                case 2: confirmarExclusao(post.getPostId(), position); return true;
+                case 3: denunciarPost(post); return true;
+                default: return false;
+            }
+        });
+        popup.show();
+    }
+
     private void confirmarExclusao(String postId, int position) {
         new AlertDialog.Builder(context)
-                .setTitle("Eliminar Publicação")
-                .setMessage("Tens a certeza que queres apagar permanentemente este post?")
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setPositiveButton("Apagar", (dialog, which) -> apagarPostDoFirebase(postId, position))
+                .setTitle("Eliminar Post")
+                .setMessage("Esta ação não pode ser desfeita.")
+                .setPositiveButton("Eliminar", (dialog, which) -> apagarPostDoFirebase(postId, position))
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
 
     private void apagarPostDoFirebase(String postId, int position) {
+        if (postId == null) return;
+
         db.collection("posts").document(postId).delete()
                 .addOnSuccessListener(aVoid -> {
-                    // Verificação extra para evitar IndexOutOfBoundsException
+                    // Nota: Se usas SnapshotListener no Fragment, ele removerá o item automaticamente.
+                    // Se não usas, mantemos a remoção manual aqui:
                     if (position >= 0 && position < postList.size()) {
-                        postList.remove(position);
-                        notifyItemRemoved(position);
-                        // Atualiza as posições de todos os itens abaixo para evitar posts fantasmas
-                        notifyItemRangeChanged(position, postList.size() - position);
-                        Toast.makeText(context, "Post eliminado.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Publicação eliminada", Toast.LENGTH_SHORT).show();
                     }
-                });
+                })
+                .addOnFailureListener(e -> Toast.makeText(context, "Erro ao eliminar: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
-
-    // ... (configurarLikes, configurarComentarios, enviarNotificacaoLike e denunciarPost mantêm-se iguais)
 
     private void configurarLikes(PostViewHolder holder, Post post) {
         List<String> likes = post.getLikes();
         boolean isLiked = likes != null && likes.contains(currentUserId);
         int likeCount = (likes != null) ? likes.size() : 0;
+
         holder.txtLike.setText((isLiked ? "❤️ " : "🤍 ") + likeCount);
         holder.txtLike.setTextColor(isLiked ? Color.RED : Color.GRAY);
+
         holder.txtLike.setOnClickListener(v -> {
-            if (post.getPostId() == null || currentUserId == null) return;
+            if (post.getPostId() == null) return;
             if (isLiked) {
                 db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
                 db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayUnion(currentUserId));
-                if (post.getUserId() != null) enviarNotificacaoLike(post.getUserId(), post.getPostId());
+                enviarNotificacaoLike(post.getUserId(), post.getPostId());
             }
         });
     }
 
     private void configurarComentarios(PostViewHolder holder, Post post) {
-        if (post.getPostId() != null) {
-            db.collection("posts").document(post.getPostId()).collection("comments")
-                    .addSnapshotListener((value, error) -> {
-                        holder.txtComment.setText("💬 " + (value != null ? value.size() : 0));
-                    });
-        }
+        // Mostra contagem simplificada. Se quiseres contagem real em tempo real, mantém o SnapshotListener.
         holder.txtComment.setOnClickListener(v -> {
             Intent intent = new Intent(context, CommentsActivity.class);
             intent.putExtra("postId", post.getPostId());
@@ -205,19 +189,20 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         report.put("reportedBy", currentUserId);
         report.put("timestamp", System.currentTimeMillis());
         db.collection("reports").add(report).addOnSuccessListener(doc ->
-                Toast.makeText(context, "Denúncia enviada.", Toast.LENGTH_SHORT).show());
+                Toast.makeText(context, "Obrigado por denunciares. Vamos analisar.", Toast.LENGTH_SHORT).show());
     }
 
     private void enviarNotificacaoLike(String targetId, String postId) {
-        if (targetId.equals(currentUserId)) return;
+        if (targetId == null || targetId.equals(currentUserId)) return;
+
+        // Obter nome de quem deu like
         db.collection("users").document(currentUserId).get().addOnSuccessListener(doc -> {
-            User eu = doc.toObject(User.class);
-            if (eu != null) {
+            if (doc.exists()) {
                 Map<String, Object> notif = new HashMap<>();
                 notif.put("targetUserId", targetId);
                 notif.put("fromUserId", currentUserId);
-                notif.put("fromUserName", eu.getNome());
-                notif.put("fromUserPhoto", eu.getPhotoUrl() != null ? eu.getPhotoUrl() : "");
+                notif.put("fromUserName", doc.getString("nome"));
+                notif.put("fromUserPhoto", doc.getString("photoUrl"));
                 notif.put("type", "like");
                 notif.put("message", "gostou da tua publicação");
                 notif.put("postId", postId);

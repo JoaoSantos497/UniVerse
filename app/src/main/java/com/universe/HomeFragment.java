@@ -25,12 +25,12 @@ public class HomeFragment extends Fragment {
     private ImageButton btnNotifications;
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
-
-    // Badge de Notificação
     private View notificationBadge;
+
     private ListenerRegistration badgeListener;
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private FeedPagerAdapter pagerAdapter;
 
     @Nullable
     @Override
@@ -40,18 +40,22 @@ public class HomeFragment extends Fragment {
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
-        // 1. Ligar componentes do XML novo
+        // 1. Inicializar componentes
         fabCreatePost = view.findViewById(R.id.fabCreatePost);
         btnNotifications = view.findViewById(R.id.btnNotifications);
         tabLayout = view.findViewById(R.id.tabLayoutFeed);
         viewPager = view.findViewById(R.id.viewPagerFeed);
         notificationBadge = view.findViewById(R.id.notificationBadge);
 
-        // 2. Configurar o ViewPager com o Adapter
-        FeedPagerAdapter adapter = new FeedPagerAdapter(this);
-        viewPager.setAdapter(adapter);
+        // 2. Configurar o ViewPager2
+        // UsamosgetChildFragmentManager() para fragmentos dentro de fragmentos
+        pagerAdapter = new FeedPagerAdapter(this);
+        viewPager.setAdapter(pagerAdapter);
 
-        // 3. Ligar as Abas ao ViewPager (Isto faz o slide funcionar com os títulos)
+        // Evita que os fragmentos sejam recriados ao deslizar (melhora performance)
+        viewPager.setOffscreenPageLimit(1);
+
+        // 3. Configurar TabLayout com títulos
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
                 tab.setText("Global");
@@ -60,10 +64,9 @@ public class HomeFragment extends Fragment {
             }
         }).attach();
 
-        // 4. Configurar Botões
+        // 4. Listeners
         fabCreatePost.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), CreatePostActivity.class);
-            // Enviar a aba selecionada atual
             int currentTab = viewPager.getCurrentItem();
             intent.putExtra("selectedTab", currentTab);
             startActivity(intent);
@@ -74,21 +77,25 @@ public class HomeFragment extends Fragment {
             startActivity(intent);
         });
 
-        // 5. Badge de Notificações
+        // 5. Iniciar escuta de notificações
         verificarNotificacoesNaoLidas();
 
         return view;
     }
 
     private void verificarNotificacoesNaoLidas() {
-        if (mAuth.getCurrentUser() == null || notificationBadge == null) return;
+        if (mAuth.getCurrentUser() == null) return;
         String myId = mAuth.getCurrentUser().getUid();
+
+        // Remove listener anterior se existir para evitar fugas de memória
+        if (badgeListener != null) badgeListener.remove();
 
         badgeListener = db.collection("notifications")
                 .whereEqualTo("targetUserId", myId)
                 .whereEqualTo("read", false)
                 .addSnapshotListener((value, error) -> {
-                    if (error != null) return;
+                    if (error != null || notificationBadge == null) return;
+
                     if (value != null && !value.isEmpty()) {
                         notificationBadge.setVisibility(View.VISIBLE);
                     } else {
@@ -98,8 +105,19 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        // Garante que a badge atualiza ao voltar para a home
+        verificarNotificacoesNaoLidas();
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (badgeListener != null) badgeListener.remove();
+        // Limpeza crucial de listeners do Firebase
+        if (badgeListener != null) {
+            badgeListener.remove();
+            badgeListener = null;
+        }
     }
 }
