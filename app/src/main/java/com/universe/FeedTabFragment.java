@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -29,6 +30,7 @@ public class FeedTabFragment extends Fragment {
     private PostAdapter postAdapter;
     private List<Post> postList;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private LinearLayoutManager layoutManager;
 
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
@@ -62,7 +64,7 @@ public class FeedTabFragment extends Fragment {
             myUid = mAuth.getCurrentUser().getUid();
             String email = mAuth.getCurrentUser().getEmail();
             if (email != null && email.contains("@")) {
-                myDomain = email.substring(email.indexOf("@") + 1);
+                myDomain = email.substring(email.indexOf("@") + 1).toLowerCase();
             }
         }
     }
@@ -70,21 +72,25 @@ public class FeedTabFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // CORREÇÃO: Certifica-te que o layout aqui é o do fragmento (layout/fragment_feed_tab.xml)
         View view = inflater.inflate(R.layout.activity_feed_tab_fragment, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerViewPosts);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        layoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        // O SwipeRefresh agora apenas reinicia os listeners se necessário
-        swipeRefreshLayout.setOnRefreshListener(this::iniciarEscutaRealtime);
+        // CORREÇÃO: O refresh agora limpa a lista para garantir uma recarga limpa
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            postList.clear();
+            postAdapter.notifyDataSetChanged();
+            iniciarEscutaRealtime();
+        });
 
-        // Inicia o fluxo de dados
         iniciarEscutaRealtime();
 
         return view;
@@ -93,21 +99,18 @@ public class FeedTabFragment extends Fragment {
     private void iniciarEscutaRealtime() {
         if (myUid.isEmpty()) return;
 
-        // 1. Escutamos os bloqueios primeiro
         if (blockListener != null) blockListener.remove();
 
         blockListener = db.collection("users").document(myUid)
                 .collection("blocked")
                 .addSnapshotListener((value, error) -> {
                     if (error != null) return;
-
                     blockedIds.clear();
                     if (value != null) {
                         for (DocumentSnapshot doc : value.getDocuments()) {
                             blockedIds.add(doc.getId());
                         }
                     }
-                    // Sempre que a lista de bloqueados mudar, atualizamos os posts
                     ouvirPosts();
                 });
     }
@@ -129,11 +132,14 @@ public class FeedTabFragment extends Fragment {
 
         postListener = query.addSnapshotListener((value, error) -> {
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-            if (error != null) return;
+            if (error != null) {
+                Log.e("Firestore", "Erro: " + error.getMessage());
+                return;
+            }
 
             if (value != null) {
-                // EXPLICAÇÃO: Se a lista estiver vazia (primeira vez), carregamos o snapshot inicial
                 if (postList.isEmpty()) {
+                    // Carga inicial
                     for (DocumentSnapshot doc : value.getDocuments()) {
                         Post post = doc.toObject(Post.class);
                         if (post != null && !blockedIds.contains(post.getUserId())) {
@@ -143,14 +149,12 @@ public class FeedTabFragment extends Fragment {
                     }
                     postAdapter.notifyDataSetChanged();
                 } else {
-                    // EXPLICAÇÃO: Se a lista já tem itens, processamos APENAS o que mudou
-                    // Isso evita que o refresh duplique tudo
-                    for (com.google.firebase.firestore.DocumentChange dc : value.getDocumentChanges()) {
+                    // Atualizações em tempo real
+                    for (DocumentChange dc : value.getDocumentChanges()) {
                         Post post = dc.getDocument().toObject(Post.class);
                         if (post == null) continue;
                         post.setPostId(dc.getDocument().getId());
 
-                        // Ignorar posts de bloqueados
                         if (blockedIds.contains(post.getUserId())) continue;
 
                         int oldIndex = dc.getOldIndex();
@@ -158,10 +162,14 @@ public class FeedTabFragment extends Fragment {
 
                         switch (dc.getType()) {
                             case ADDED:
-                                // Verifica se o post já não existe na lista para evitar duplicados "fantasma"
                                 if (!contemPost(post.getPostId())) {
                                     postList.add(newIndex, post);
                                     postAdapter.notifyItemInserted(newIndex);
+
+                                    // AUTO-SCROLL: Se o post é novo e o user está no topo, puxa para cima
+                                    if (newIndex == 0 && layoutManager.findFirstVisibleItemPosition() <= 1) {
+                                        recyclerView.scrollToPosition(0);
+                                    }
                                 }
                                 break;
 
@@ -174,8 +182,15 @@ public class FeedTabFragment extends Fragment {
 
                             case REMOVED:
                                 if (oldIndex != -1 && oldIndex < postList.size()) {
+                                    // 1. Removemos o objeto da nossa lista local
                                     postList.remove(oldIndex);
+
+                                    // 2. Notificamos a remoção para a animação suave
                                     postAdapter.notifyItemRemoved(oldIndex);
+
+                                    // 3. ESSENCIAL: Notificamos que os itens abaixo mudaram de posição
+                                    // Isso evita que o RecyclerView tente aceder a índices errados (o bug)
+                                    postAdapter.notifyItemRangeChanged(oldIndex, postList.size());
                                 }
                                 break;
                         }

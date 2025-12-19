@@ -126,11 +126,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 });
 
         holder.txtLike.setOnClickListener(v -> {
-            boolean liked = post.getLikes() != null && post.getLikes().contains(currentUserId);
-            if (liked) {
-                db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayRemove(currentUserId));
+            // Referência direta ao documento para evitar ler dados locais obsoletos
+            com.google.firebase.firestore.DocumentReference postRef = db.collection("posts").document(post.getPostId());
+
+            // Verificamos o estado atual do objeto (preenchido pelo SnapshotListener acima)
+            boolean jáDeuLike = post.getLikes() != null && post.getLikes().contains(currentUserId);
+
+            if (jáDeuLike) {
+                postRef.update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
-                db.collection("posts").document(post.getPostId()).update("likes", FieldValue.arrayUnion(currentUserId));
+                postRef.update("likes", FieldValue.arrayUnion(currentUserId));
                 enviarNotificacaoLike(post.getUserId(), post.getPostId());
             }
         });
@@ -141,13 +146,11 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 .setTitle("Apagar Post")
                 .setMessage("Tens a certeza?")
                 .setPositiveButton("Sim", (d, w) -> {
+                    // APENAS apaga no DB.
+                    // O FeedTabFragment vai detetar o REMOVED e fará o notifyItemRemoved sozinho!
                     db.collection("posts").document(postId).delete()
-                            .addOnSuccessListener(aVoid -> {
-                                if (position < postList.size()) {
-                                    postList.remove(position);
-                                    notifyItemRemoved(position);
-                                    notifyItemRangeChanged(position, postList.size());
-                                }
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(context, "Erro ao apagar", Toast.LENGTH_SHORT).show();
                             });
                 })
                 .setNegativeButton("Não", null).show();
