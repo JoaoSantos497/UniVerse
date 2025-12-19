@@ -130,9 +130,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             com.google.firebase.firestore.DocumentReference postRef = db.collection("posts").document(post.getPostId());
 
             // Verificamos o estado atual do objeto (preenchido pelo SnapshotListener acima)
-            boolean jáDeuLike = post.getLikes() != null && post.getLikes().contains(currentUserId);
+            boolean jaDeuLike = post.getLikes() != null && post.getLikes().contains(currentUserId);
 
-            if (jáDeuLike) {
+            if (jaDeuLike) {
                 postRef.update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
                 postRef.update("likes", FieldValue.arrayUnion(currentUserId));
