@@ -61,7 +61,6 @@ public class UserListActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         userList = new ArrayList<>();
 
-        // --- CORREÇÃO AQUI: Passamos 'true' para mostrar o botão de Seguir nesta lista ---
         userAdapter = new UserAdapter(userList, true);
 
         recyclerView.setAdapter(userAdapter);

@@ -83,14 +83,17 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
         // --- LÓGICA DE FILTRAGEM NA UI ---
         // Esconde o item se o utilizador estiver bloqueado ou se for o próprio utilizador
-        if (bloqueadosIds.contains(targetUid) || targetUid.equals(myUid)) {
+        if ((bloqueadosIds.contains(targetUid) || targetUid.equals(myUid)) && mostrarBotaoSeguir) {
             holder.itemView.setVisibility(View.GONE);
             holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(0, 0));
             return;
         } else {
             holder.itemView.setVisibility(View.VISIBLE);
-            holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            // Restaura o tamanho normal para utilizadores válidos
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            holder.itemView.setLayoutParams(params);
         }
 
         holder.txtName.setText(user.getNome() != null ? user.getNome() : "Utilizador");
