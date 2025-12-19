@@ -3,6 +3,7 @@ agp = "8.13.2"
 androidImageCropper = "4.7.0"
 firebaseBom = "34.7.0"
 firebaseFirestore = "26.0.2"
+firebaseFirestoreVersion = "25.1.1"
 firebaseMessaging = "25.0.1"
 glide = "5.0.5"
 glideVersion = "4.12.0"
@@ -24,6 +25,7 @@ firebase-analytics = { module = "com.google.firebase:firebase-analytics", versio
 firebase-auth = { module = "com.google.firebase:firebase-auth", version = "24.0.1" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" }
+firebase-firestore-v2511 = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestoreVersion" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
 firebase-storage = { module = "com.google.firebase:firebase-storage", version = "22.0.1" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }

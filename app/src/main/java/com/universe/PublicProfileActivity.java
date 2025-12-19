@@ -3,6 +3,7 @@ package com.universe;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -19,9 +20,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.firestore.FieldValue;
@@ -33,28 +36,26 @@ import java.util.Map;
 
 public class PublicProfileActivity extends AppCompatActivity {
 
-    // UI Perfil
     private ImageView imgProfile;
     private TextView txtName, txtCourse, txtUni, txtFollowers, txtFollowing;
     private Button btnFollow, btnMessage;
     private ImageButton btnBack, btnOptions;
 
-    // UI Bloqueio
-    private LinearLayout layoutBlocked; // Tela de aviso
-    private Button btnUnblock;          // Botão para reverter
-    private View profileContent;        // Container do perfil real
+    private LinearLayout layoutBlocked;
+    private Button btnUnblock;
+    private View profileContent;
 
-    // Feed do Utilizador
     private RecyclerView recyclerView;
     private LinearLayout emptyView;
     private PostAdapter postAdapter;
     private List<Post> postList;
 
-    // Firebase
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    // Dados
+    // Gestão de Listeners para evitar crashes e gastos de dados
+    private ListenerRegistration perfilListener, blockListener, followListener, postListener;
+
     private String targetUserId;
     private String currentUserId;
     private boolean isFollowing = false;
@@ -80,9 +81,8 @@ public class PublicProfileActivity extends AppCompatActivity {
         initViews();
         setupButtons();
 
-        // 1. Verificar se o utilizador está bloqueado antes de carregar tudo
+        // Ordem de execução: 1. Bloqueio -> 2. Dados
         verificarBloqueio();
-
         carregarDadosPerfil();
         carregarPostsDoUtilizador();
         setupFollowLogic();
@@ -102,10 +102,9 @@ public class PublicProfileActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBackPublic);
         btnOptions = findViewById(R.id.btnProfileOptions);
 
-        // Componentes de Bloqueio
         layoutBlocked = findViewById(R.id.layoutBlocked);
         btnUnblock = findViewById(R.id.btnUnblock);
-        profileContent = findViewById(R.id.profileContentContainer); // ID do teu ScrollView/MainLayout
+        profileContent = findViewById(R.id.profileContentContainer);
 
         recyclerView = findViewById(R.id.recyclerPublicPosts);
         emptyView = findViewById(R.id.emptyViewPublic);
@@ -127,27 +126,18 @@ public class PublicProfileActivity extends AppCompatActivity {
     private void verificarBloqueio() {
         if (currentUserId == null) return;
 
-        db.collection("users").document(currentUserId)
+        blockListener = db.collection("users").document(currentUserId)
                 .collection("blocked").document(targetUserId)
                 .addSnapshotListener((value, error) -> {
-                    if (value != null && value.exists()) {
-                        mostrarInterfaceBloqueado(true);
-                    } else {
-                        mostrarInterfaceBloqueado(false);
-                    }
+                    if (isDestroyed() || isFinishing()) return;
+                    mostrarInterfaceBloqueado(value != null && value.exists());
                 });
     }
 
     private void mostrarInterfaceBloqueado(boolean isBlocked) {
-        if (isBlocked) {
-            layoutBlocked.setVisibility(View.VISIBLE);
-            profileContent.setVisibility(View.GONE);
-            btnOptions.setVisibility(View.GONE); // Impede abrir o menu de novo
-        } else {
-            layoutBlocked.setVisibility(View.GONE);
-            profileContent.setVisibility(View.VISIBLE);
-            btnOptions.setVisibility(View.VISIBLE);
-        }
+        layoutBlocked.setVisibility(isBlocked ? View.VISIBLE : View.GONE);
+        profileContent.setVisibility(isBlocked ? View.GONE : View.VISIBLE);
+        btnOptions.setVisibility(isBlocked ? View.GONE : View.VISIBLE);
     }
 
     private void bloquearUtilizador() {
@@ -160,30 +150,31 @@ public class PublicProfileActivity extends AppCompatActivity {
                 .set(data)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Utilizador bloqueado.", Toast.LENGTH_SHORT).show();
-                    if (isFollowing) deixarDeSeguir(); // Limpa contadores ao bloquear
+                    if (isFollowing) deixarDeSeguir();
                 });
     }
 
     private void desbloquearUtilizador() {
         db.collection("users").document(currentUserId)
                 .collection("blocked").document(targetUserId)
-                .delete()
-                .addOnSuccessListener(aVoid -> Toast.makeText(this, "Utilizador desbloqueado.", Toast.LENGTH_SHORT).show());
+                .delete();
     }
 
     private void carregarDadosPerfil() {
-        db.collection("users").document(targetUserId)
-                .addSnapshotListener((documentSnapshot, error) -> {
-                    if (error != null || documentSnapshot == null || !documentSnapshot.exists()) return;
+        perfilListener = db.collection("users").document(targetUserId)
+                .addSnapshotListener((doc, error) -> {
+                    // CORREÇÃO: Evita o crash do Glide verificando se a Activity está viva
+                    if (isDestroyed() || isFinishing()) return;
+                    if (error != null || doc == null || !doc.exists()) return;
 
-                    User user = documentSnapshot.toObject(User.class);
+                    User user = doc.toObject(User.class);
                     if (user != null) {
                         txtName.setText(user.getNome());
                         txtCourse.setText(user.getCurso());
                         txtUni.setText(user.getUniversidade());
 
-                        long followers = documentSnapshot.getLong("followersCount") != null ? documentSnapshot.getLong("followersCount") : 0;
-                        long following = documentSnapshot.getLong("followingCount") != null ? documentSnapshot.getLong("followingCount") : 0;
+                        long followers = doc.getLong("followersCount") != null ? doc.getLong("followersCount") : 0;
+                        long following = doc.getLong("followingCount") != null ? doc.getLong("followingCount") : 0;
 
                         txtFollowers.setText(String.valueOf(Math.max(0, followers)));
                         txtFollowing.setText(String.valueOf(Math.max(0, following)));
@@ -209,16 +200,17 @@ public class PublicProfileActivity extends AppCompatActivity {
     }
 
     private void verificarSeJaSegue() {
-        db.collection("users").document(currentUserId)
+        followListener = db.collection("users").document(currentUserId)
                 .collection("following").document(targetUserId)
                 .addSnapshotListener((value, error) -> {
-                    if (value != null && value.exists()) {
-                        isFollowing = true;
+                    if (isDestroyed() || isFinishing()) return;
+
+                    isFollowing = value != null && value.exists();
+                    if (isFollowing) {
                         btnFollow.setText("A Seguir");
                         btnFollow.setBackgroundColor(Color.GRAY);
                         btnFollow.setTextColor(Color.BLACK);
                     } else {
-                        isFollowing = false;
                         btnFollow.setText("Seguir");
                         btnFollow.setBackgroundColor(ContextCompat.getColor(this, R.color.purple_500));
                         btnFollow.setTextColor(Color.WHITE);
@@ -227,73 +219,90 @@ public class PublicProfileActivity extends AppCompatActivity {
     }
 
     private void seguirUtilizador() {
+        if (isFollowing) return;
         btnFollow.setEnabled(false);
-        WriteBatch batch = db.batch();
 
         DocumentReference refFollowing = db.collection("users").document(currentUserId).collection("following").document(targetUserId);
-        DocumentReference refFollower = db.collection("users").document(targetUserId).collection("followers").document(currentUserId);
-        DocumentReference refMe = db.collection("users").document(currentUserId);
-        DocumentReference refTarget = db.collection("users").document(targetUserId);
+        refFollowing.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && !task.getResult().exists()) {
+                WriteBatch batch = db.batch();
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("uid", targetUserId);
-        data.put("timestamp", FieldValue.serverTimestamp());
+                Map<String, Object> data = new HashMap<>();
+                data.put("uid", targetUserId);
+                data.put("timestamp", FieldValue.serverTimestamp());
 
-        Map<String, Object> dataFollower = new HashMap<>();
-        dataFollower.put("uid", currentUserId);
-        dataFollower.put("timestamp", FieldValue.serverTimestamp());
+                Map<String, Object> dataFollower = new HashMap<>();
+                dataFollower.put("uid", currentUserId);
+                dataFollower.put("timestamp", FieldValue.serverTimestamp());
 
-        batch.set(refFollowing, data);
-        batch.set(refFollower, dataFollower);
-        batch.update(refMe, "followingCount", FieldValue.increment(1));
-        batch.update(refTarget, "followersCount", FieldValue.increment(1));
+                batch.set(refFollowing, data);
+                batch.set(refTargetFollower(), dataFollower);
+                batch.update(db.collection("users").document(currentUserId), "followingCount", FieldValue.increment(1));
+                batch.update(db.collection("users").document(targetUserId), "followersCount", FieldValue.increment(1));
 
-        batch.commit().addOnSuccessListener(aVoid -> {
-            enviarNotificacao(targetUserId, "follow", "começou a seguir-te", null);
-            btnFollow.setEnabled(true);
-        }).addOnFailureListener(e -> btnFollow.setEnabled(true));
+                batch.commit().addOnSuccessListener(aVoid -> {
+                    enviarNotificacao(targetUserId, "follow", "começou a seguir-te", null);
+                    btnFollow.setEnabled(true);
+                }).addOnFailureListener(e -> btnFollow.setEnabled(true));
+            } else {
+                btnFollow.setEnabled(true);
+            }
+        });
     }
 
     private void deixarDeSeguir() {
         btnFollow.setEnabled(false);
         WriteBatch batch = db.batch();
 
-        DocumentReference refFollowing = db.collection("users").document(currentUserId).collection("following").document(targetUserId);
-        DocumentReference refFollower = db.collection("users").document(targetUserId).collection("followers").document(currentUserId);
-        DocumentReference refMe = db.collection("users").document(currentUserId);
-        DocumentReference refTarget = db.collection("users").document(targetUserId);
-
-        batch.delete(refFollowing);
-        batch.delete(refFollower);
-        batch.update(refMe, "followingCount", FieldValue.increment(-1));
-        batch.update(refTarget, "followersCount", FieldValue.increment(-1));
+        batch.delete(db.collection("users").document(currentUserId).collection("following").document(targetUserId));
+        batch.delete(db.collection("users").document(targetUserId).collection("followers").document(currentUserId));
+        batch.update(db.collection("users").document(currentUserId), "followingCount", FieldValue.increment(-1));
+        batch.update(db.collection("users").document(targetUserId), "followersCount", FieldValue.increment(-1));
 
         batch.commit().addOnSuccessListener(aVoid -> btnFollow.setEnabled(true))
                 .addOnFailureListener(e -> btnFollow.setEnabled(true));
     }
 
     private void carregarPostsDoUtilizador() {
-        db.collection("posts")
+        Query query = db.collection("posts")
                 .whereEqualTo("userId", targetUserId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .addSnapshotListener((value, error) -> {
-                    if (value != null && !value.isEmpty()) {
-                        postList.clear();
-                        for (DocumentSnapshot doc : value.getDocuments()) {
-                            Post post = doc.toObject(Post.class);
-                            if (post != null) {
-                                post.setPostId(doc.getId());
-                                postList.add(post);
-                            }
-                        }
-                        postAdapter.notifyDataSetChanged();
-                        recyclerView.setVisibility(View.VISIBLE);
-                        emptyView.setVisibility(View.GONE);
-                    } else {
-                        recyclerView.setVisibility(View.GONE);
-                        emptyView.setVisibility(View.VISIBLE);
+                .orderBy("timestamp", Query.Direction.DESCENDING);
+
+        postListener = query.addSnapshotListener((value, error) -> {
+            if (isDestroyed() || isFinishing()) return;
+            if (error != null) return;
+
+            if (value != null && !value.isEmpty()) {
+                postList.clear();
+                for (DocumentSnapshot doc : value.getDocuments()) {
+                    Post post = doc.toObject(Post.class);
+                    if (post != null) {
+                        post.setPostId(doc.getId());
+                        postList.add(post);
                     }
-                });
+                }
+                postAdapter.notifyDataSetChanged();
+                recyclerView.setVisibility(View.VISIBLE);
+                emptyView.setVisibility(View.GONE);
+            } else {
+                recyclerView.setVisibility(View.GONE);
+                emptyView.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private DocumentReference refTargetFollower() {
+        return db.collection("users").document(targetUserId).collection("followers").document(currentUserId);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // ESSENCIAL: Remove todos os listeners para evitar crashes e gastos desnecessários
+        if (perfilListener != null) perfilListener.remove();
+        if (blockListener != null) blockListener.remove();
+        if (followListener != null) followListener.remove();
+        if (postListener != null) postListener.remove();
     }
 
     private void setupOptionsButton() {
@@ -301,12 +310,8 @@ public class PublicProfileActivity extends AppCompatActivity {
             PopupMenu popup = new PopupMenu(this, v);
             popup.getMenu().add(0, 1, 0, "Denunciar");
             popup.getMenu().add(0, 2, 0, "Bloquear");
-
             popup.setOnMenuItemClickListener(item -> {
-                if (item.getItemId() == 2) {
-                    bloquearUtilizador();
-                    return true;
-                }
+                if (item.getItemId() == 2) { bloquearUtilizador(); return true; }
                 return false;
             });
             popup.show();
@@ -336,7 +341,6 @@ public class PublicProfileActivity extends AppCompatActivity {
                 notif.put("fromUserName", eu.getNome());
                 notif.put("type", type);
                 notif.put("message", msg);
-                notif.put("postId", postId);
                 notif.put("timestamp", FieldValue.serverTimestamp());
                 notif.put("read", false);
                 db.collection("notifications").add(notif);

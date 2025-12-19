@@ -10,10 +10,11 @@ public class User {
     private String photoUrl;
     private long ultimaTrocaUsername;
     private String universityDomain;
-
-    // --- NOVOS CAMPOS PARA CONTADORES ---
     private long followersCount;
     private long followingCount;
+
+    // --- NOVO CAMPO PARA NOTIFICAÇÕES (Resolve o erro do Logcat) ---
+    private String fcmToken;
 
     // Construtor padrão (Obrigatório para o Firebase)
     public User() {}
@@ -27,10 +28,9 @@ public class User {
         this.curso = curso;
         this.universidade = universidade;
         this.ultimaTrocaUsername = 0;
-        this.followersCount = 0; // Inicializa a zero
-        this.followingCount = 0; // Inicializa a zero
+        this.followersCount = 0;
+        this.followingCount = 0;
 
-        // Lógica para extrair o domínio automaticamente do email
         if (email != null && email.contains("@")) {
             this.universityDomain = email.substring(email.indexOf("@") + 1);
         } else {
@@ -67,10 +67,13 @@ public class User {
     public String getUniversityDomain() { return universityDomain; }
     public void setUniversityDomain(String universityDomain) { this.universityDomain = universityDomain; }
 
-    // --- GETTERS E SETTERS DOS CONTADORES ---
     public long getFollowersCount() { return followersCount; }
     public void setFollowersCount(long followersCount) { this.followersCount = followersCount; }
 
     public long getFollowingCount() { return followingCount; }
     public void setFollowingCount(long followingCount) { this.followingCount = followingCount; }
+
+    // --- GETTER E SETTER PARA O fcmToken ---
+    public String getFcmToken() { return fcmToken; }
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
 }

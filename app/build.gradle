@@ -54,6 +54,7 @@ dependencies {
     implementation libs.glide.v4120
     annotationProcessor libs.compiler
     implementation libs.firebase.messaging
+    implementation libs.firebase.firestore.v2511
 
 
 

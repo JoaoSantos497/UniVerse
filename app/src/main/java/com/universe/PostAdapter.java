@@ -88,6 +88,22 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         // Comentários (Contagem e Clique)
         configurarComentarios(holder, post);
 
+        // Clique na foto de perfil
+        holder.imgProfile.setOnClickListener(v -> {
+            Intent intent = new Intent(context, PublicProfileActivity.class);
+            // ALTERADO: de "userId" para "targetUserId" para bater certo com a Activity
+            intent.putExtra("targetUserId", post.getUserId());
+            context.startActivity(intent);
+        });
+
+        // Clique no nome
+        holder.txtUserName.setOnClickListener(v -> {
+            Intent intent = new Intent(context, PublicProfileActivity.class);
+            // ALTERADO: de "userId" para "targetUserId"
+            intent.putExtra("targetUserId", post.getUserId());
+            context.startActivity(intent);
+        });
+
         // Menu Opções
         holder.btnMoreOptions.setOnClickListener(v -> {
             int actualPos = holder.getBindingAdapterPosition();
