@@ -1,6 +1,7 @@
 package com.universe;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -76,20 +77,24 @@ public class UserListActivity extends AppCompatActivity {
         userList.clear();
         userAdapter.notifyDataSetChanged();
 
+        // Referência: users -> [ID_DO_PERFIL] -> [followers ou following]
         db.collection("users").document(userId).collection(type)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (queryDocumentSnapshots.isEmpty()) {
+                        Log.d("USER_LIST_DEBUG", "Sub-coleção " + type + " está vazia para o user: " + userId);
                         mostrarVazio(true);
                         return;
                     }
 
                     mostrarVazio(false);
+                    Log.d("USER_LIST_DEBUG", "Encontrados " + queryDocumentSnapshots.size() + " documentos.");
 
                     for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                        // O ID do documento na sub-coleção é o UID do utilizador
+                        // Pegamos no ID do documento, que é o UID do utilizador
                         String idEncontrado = doc.getId();
 
+                        // Buscamos os detalhes do utilizador na coleção principal
                         db.collection("users").document(idEncontrado).get()
                                 .addOnSuccessListener(userDoc -> {
                                     if (userDoc.exists()) {
@@ -100,11 +105,13 @@ public class UserListActivity extends AppCompatActivity {
                                             userAdapter.notifyItemInserted(userList.size() - 1);
                                         }
                                     }
-                                });
+                                })
+                                .addOnFailureListener(e -> Log.e("USER_LIST_DEBUG", "Erro ao buscar detalhes do user: " + idEncontrado));
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Erro ao carregar lista.", Toast.LENGTH_SHORT).show();
+                    Log.e("USER_LIST_DEBUG", "Erro na Query principal: " + e.getMessage());
+                    Toast.makeText(this, "Sem permissão ou erro de rede.", Toast.LENGTH_SHORT).show();
                     mostrarVazio(true);
                 });
     }
