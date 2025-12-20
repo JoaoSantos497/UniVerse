@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog; // Importante para o menu de escolha
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -41,7 +42,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         Button btnLogout = findViewById(R.id.btnLogout);
 
-        // --- CARREGAR O TEMA ATUAL (Para mostrar o texto correto) ---
+        // --- CARREGAR O TEMA ATUAL
         carregarEstadoTema();
 
         // 1. Botão Voltar

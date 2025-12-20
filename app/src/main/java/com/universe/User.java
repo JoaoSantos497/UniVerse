@@ -13,7 +13,7 @@ public class User {
     private long followersCount;
     private long followingCount;
 
-    // --- NOVO CAMPO PARA NOTIFICAÇÕES (Resolve o erro do Logcat) ---
+    // --- NOVO CAMPO PARA NOTIFICAÇÕES
     private String fcmToken;
 
     // Construtor padrão (Obrigatório para o Firebase)

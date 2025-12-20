@@ -327,6 +327,7 @@ public class PublicProfileActivity extends AppCompatActivity {
         Intent intent = new Intent(this, UserListActivity.class);
         intent.putExtra("userId", targetUserId);
         intent.putExtra("type", type);
+
         startActivity(intent);
     }
 

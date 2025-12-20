@@ -80,16 +80,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         String targetUid = user.getUid();
 
         if (targetUid == null) return;
-
-        // --- LÓGICA DE FILTRAGEM NA UI ---
-        // Esconde o item se o utilizador estiver bloqueado ou se for o próprio utilizador
-        if ((bloqueadosIds.contains(targetUid) || targetUid.equals(myUid)) && mostrarBotaoSeguir) {
+        if (bloqueadosIds.contains(targetUid)) {
             holder.itemView.setVisibility(View.GONE);
             holder.itemView.setLayoutParams(new RecyclerView.LayoutParams(0, 0));
             return;
         } else {
             holder.itemView.setVisibility(View.VISIBLE);
-            // Restaura o tamanho normal para utilizadores válidos
             RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -105,12 +101,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .placeholder(R.drawable.circle_bg)
                 .into(holder.imgAvatar);
 
-        // Configuração do botão Seguir
-        if (!mostrarBotaoSeguir) {
+        // --- LÓGICA DO BOTÃO SEGUIR ATUALIZADA ---
+        if (!mostrarBotaoSeguir || targetUid.equals(myUid)) {
+            // Esconde o botão se a flag for falsa OU se o perfil na lista for o meu
             holder.btnSeguir.setVisibility(View.GONE);
         } else {
             holder.btnSeguir.setVisibility(View.VISIBLE);
-            holder.btnSeguir.setEnabled(false); // Travado até verificar Firestore
+            holder.btnSeguir.setEnabled(false);
             verificarSeSigo(targetUid, (MaterialButton) holder.btnSeguir);
         }
 

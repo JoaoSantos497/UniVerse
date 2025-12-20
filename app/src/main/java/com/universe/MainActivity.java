@@ -29,9 +29,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Forçar Dark Mode a seguir o sistema
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
-
         setContentView(R.layout.activity_main);
 
         // --- 1. VERIFICAÇÕES DE SEGURANÇA E NOTIFICAÇÕES ---
