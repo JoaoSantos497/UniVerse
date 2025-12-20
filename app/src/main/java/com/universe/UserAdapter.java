@@ -1,5 +1,7 @@
 package com.universe;
 
+import static com.universe.NotificationType.FOLLOW;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -36,11 +38,19 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private String myUid;
     private FirebaseFirestore db;
     private boolean mostrarBotaoSeguir;
-    private Set<String> bloqueadosIds = new HashSet<>(); // Lista interna de bloqueados
+    private Set<String> bloqueadosIds = new HashSet<>();
+
+    private UserService userService;
+
+    private NotificationService notificationService;
+
+
 
     public UserAdapter(List<User> userList, boolean mostrarBotaoSeguir) {
         this.userList = userList;
         this.mostrarBotaoSeguir = mostrarBotaoSeguir;
+        this.userService = new UserService();
+        this.notificationService = new NotificationService();
 
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -49,6 +59,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             carregarBloqueados();
         }
     }
+
+
 
     private void carregarBloqueados() {
         if (myUid == null) return;
@@ -162,35 +174,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private void executarFollow(User targetUser, MaterialButton btn) {
         WriteBatch batch = db.batch();
         String tUid = targetUser.getUid();
-
-        DocumentReference refFollowing = db.collection("users").document(myUid).collection("following").document(tUid);
-        DocumentReference refFollower = db.collection("users").document(tUid).collection("followers").document(myUid);
-        DocumentReference refMe = db.collection("users").document(myUid);
-        DocumentReference refTarget = db.collection("users").document(tUid);
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("uid", tUid);
-        data.put("timestamp", FieldValue.serverTimestamp());
-
-        Map<String, Object> dataFollower = new HashMap<>();
-        dataFollower.put("uid", myUid);
-        dataFollower.put("timestamp", FieldValue.serverTimestamp());
-
-        batch.set(refFollowing, data);
-        batch.set(refFollower, dataFollower);
-
-        batch.update(refMe, "followingCount", FieldValue.increment(1));
-        batch.update(refTarget, "followersCount", FieldValue.increment(1));
-
-        // Enviar notificação de follow
-        DocumentReference notifRef = db.collection("notifications").document();
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("targetUserId", tUid);
-        notif.put("fromUserId", myUid);
-        notif.put("message", "começou a seguir-te!");
-        notif.put("type", "follow");
-        notif.put("timestamp", FieldValue.serverTimestamp());
-        batch.set(notifRef, notif);
+        batch = userService.followUser(batch, tUid);
+        batch = notificationService.sendNotification(batch, tUid, FOLLOW);
 
         batch.commit().addOnSuccessListener(aVoid -> {
             configurarBotaoSeguindo(btn);
@@ -201,16 +186,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private void executarUnfollow(String tUid, MaterialButton btn) {
         WriteBatch batch = db.batch();
 
-        DocumentReference refFollowing = db.collection("users").document(myUid).collection("following").document(tUid);
-        DocumentReference refFollower = db.collection("users").document(tUid).collection("followers").document(myUid);
-        DocumentReference refMe = db.collection("users").document(myUid);
-        DocumentReference refTarget = db.collection("users").document(tUid);
-
-        batch.delete(refFollowing);
-        batch.delete(refFollower);
-
-        batch.update(refMe, "followingCount", FieldValue.increment(-1));
-        batch.update(refTarget, "followersCount", FieldValue.increment(-1));
+        batch = userService.unfollowUser(batch, tUid);
 
         batch.commit().addOnSuccessListener(aVoid -> {
             configurarBotaoSeguir(btn);

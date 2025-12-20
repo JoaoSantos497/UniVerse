@@ -1,5 +1,7 @@
 package com.universe;
 
+import static com.universe.NotificationType.LIKE;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -32,9 +34,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private FirebaseFirestore db;
     private Context context;
 
+    private NotificationService notificationService;
+
     public PostAdapter(List<Post> postList) {
         this.postList = postList;
         this.db = FirebaseFirestore.getInstance();
+        this.notificationService = new NotificationService();
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
@@ -152,7 +157,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 postRef.update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
                 postRef.update("likes", FieldValue.arrayUnion(currentUserId));
-                enviarNotificacaoLike(post.getUserId(), post.getPostId());
+                notificationService.sendNotification(post.getUserId(), LIKE);
             }
         });
     }
@@ -183,21 +188,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             Intent intent = new Intent(context, CommentsActivity.class);
             intent.putExtra("postId", post.getPostId());
             context.startActivity(intent);
-        });
-    }
-
-    private void enviarNotificacaoLike(String targetId, String postId) {
-        if (targetId.equals(currentUserId)) return;
-        db.collection("users").document(currentUserId).get().addOnSuccessListener(doc -> {
-            if (doc.exists()) {
-                Map<String, Object> n = new HashMap<>();
-                n.put("targetUserId", targetId);
-                n.put("fromUserId", currentUserId);
-                n.put("fromUserName", doc.getString("nome"));
-                n.put("type", "like");
-                n.put("timestamp", System.currentTimeMillis());
-                db.collection("notifications").add(n);
-            }
         });
     }
 

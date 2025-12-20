@@ -15,6 +15,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -31,8 +32,10 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        FirebaseFirestore.getInstance().clearPersistence().addOnSuccessListener(unused -> {});
+
         // --- 1. VERIFICAÇÕES DE SEGURANÇA E NOTIFICAÇÕES ---
-        verificarEstadoConta(); // Verifica se a conta ainda existe
+        verificarEstadoConta();
         verificarPermissaoNotificacao();
         atualizarTokenFCM();
 

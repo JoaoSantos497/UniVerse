@@ -1,5 +1,7 @@
 package com.universe;
 
+import static com.universe.NotificationType.COMMENT;
+
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
@@ -61,6 +63,10 @@ public class CommentsActivity extends AppCompatActivity {
     private ActivityResultLauncher<String> mGetContent;
     private String idComentarioEdicao = null;
 
+    private NotificationService notificationService;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +83,7 @@ public class CommentsActivity extends AppCompatActivity {
         storage = FirebaseStorage.getInstance();
 
         ligarComponentes();
-
+        notificationService = new NotificationService();
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentList = new ArrayList<>();
         adapter = new CommentsAdapter(commentList, username -> ativarModoResposta(username));
@@ -313,18 +319,7 @@ public class CommentsActivity extends AppCompatActivity {
         db.collection("users").document(mAuth.getCurrentUser().getUid()).get().addOnSuccessListener(doc -> {
             User eu = doc.toObject(User.class);
             if (eu != null) {
-                Map<String, Object> notifMap = new HashMap<>();
-                notifMap.put("targetUserId", donoDoPostId);
-                notifMap.put("fromUserId", mAuth.getCurrentUser().getUid());
-                notifMap.put("fromUserName", eu.getNome());
-                notifMap.put("fromUserPhoto", eu.getPhotoUrl());
-                notifMap.put("type", "comment");
-                notifMap.put("message", "comentou a tua publicação");
-                notifMap.put("postId", postId);
-                notifMap.put("timestamp", System.currentTimeMillis());
-                notifMap.put("read", false);
-
-                db.collection("notifications").add(notifMap);
+                notificationService.sendNotification(eu, donoDoPostId, postId, COMMENT);
             }
         });
     }
