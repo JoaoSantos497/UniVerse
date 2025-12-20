@@ -1,5 +1,6 @@
 package com.universe;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.Exclude;
 
 public class Notification {
@@ -10,7 +11,7 @@ public class Notification {
     private String type; // "like", "follow", "comment"
     private String message;
     private String postId;
-    private long timestamp;
+    private Timestamp timestamp;
     private boolean read;
 
     @Exclude
@@ -18,7 +19,7 @@ public class Notification {
 
     public Notification() { }
 
-    public Notification(String fromUserId, String fromUserName, String fromUserPhoto, String targetUserId, String type, String message, String postId, long timestamp) {
+    public Notification(String fromUserId, String fromUserName, String fromUserPhoto, String targetUserId, String type, String message, String postId, Timestamp timestamp) {
         this.fromUserId = fromUserId;
         this.fromUserName = fromUserName;
         this.fromUserPhoto = fromUserPhoto;
@@ -51,8 +52,8 @@ public class Notification {
     public void setMessage(String message) { this.message = message; }
     public String getPostId() { return postId; }
     public void setPostId(String postId) { this.postId = postId; }
-    public long getTimestamp() { return timestamp; }
-    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    public Timestamp getTimestamp() { return timestamp; }
+    public void setTimestamp(Timestamp timestamp) { this.timestamp = timestamp; }
     public boolean isRead() { return read; }
     public void setRead(boolean read) { this.read = read; }
 }
