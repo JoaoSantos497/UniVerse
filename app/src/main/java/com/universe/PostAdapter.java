@@ -1,5 +1,6 @@
 package com.universe;
 
+import static com.universe.NotificationType.COMMENT;
 import static com.universe.NotificationType.LIKE;
 
 import android.app.AlertDialog;
@@ -34,12 +35,15 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private FirebaseFirestore db;
     private Context context;
 
+    private UserService userService;
+
     private NotificationService notificationService;
 
     public PostAdapter(List<Post> postList) {
         this.postList = postList;
         this.db = FirebaseFirestore.getInstance();
         this.notificationService = new NotificationService();
+        this.userService = new UserService();
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
@@ -158,6 +162,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             } else {
                 postRef.update("likes", FieldValue.arrayUnion(currentUserId));
                 notificationService.sendNotification(post.getUserId(), LIKE);
+
+
             }
         });
     }

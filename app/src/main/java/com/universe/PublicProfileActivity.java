@@ -288,10 +288,6 @@ public class PublicProfileActivity extends AppCompatActivity {
         });
     }
 
-    private DocumentReference refTargetFollower() {
-        return db.collection("users").document(targetUserId).collection("followers").document(currentUserId);
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();

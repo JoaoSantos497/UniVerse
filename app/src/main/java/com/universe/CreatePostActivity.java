@@ -40,6 +40,11 @@ public class CreatePostActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseStorage storage;
 
+    private UserService userService;
+
+    private NotificationService notificationService;
+
+
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<String> mGetContent;
 
@@ -54,6 +59,9 @@ public class CreatePostActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+        userService = new UserService();
+        notificationService = new NotificationService();
+
 
         ligarComponentes();
 
@@ -187,6 +195,12 @@ public class CreatePostActivity extends AppCompatActivity {
             db.collection("posts").document(newPostId).set(post)
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "Publicado!", Toast.LENGTH_SHORT).show();
+                        db.collection("users").document(mAuth.getCurrentUser().getUid()).collection("followers").get().addOnSuccessListener(querySnapshot -> {
+                            for (com.google.firebase.firestore.DocumentSnapshot document : querySnapshot.getDocuments()) {
+                                notificationService.sendNotification(document.getId(), NotificationType.POST);
+                            }
+                                });
+
                         finish(); // Ao fechar, o FeedTabFragment já terá o post novo via SnapshotListener
                     })
                     .addOnFailureListener(e -> {
