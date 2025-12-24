@@ -8,11 +8,11 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
-
 
     <application
         android:name=".UniVerseApp"
@@ -34,13 +34,12 @@
             </intent-filter>
         </service>
 
-
-
         <activity
             android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -50,6 +49,15 @@
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             tools:replace="android:theme, android:exported" />
+
+
+
+
+
+
+        <activity
+            android:name=".PostDetailsActivity"
+            android:exported="false" />
 
         <activity
             android:name=".BlockedUsersActivity"
@@ -93,7 +101,6 @@
         <activity
             android:name=".ChangePasswordActivity"
             android:exported="false" />
-
     </application>
 
 </manifest>

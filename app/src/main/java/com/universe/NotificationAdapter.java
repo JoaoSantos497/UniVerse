@@ -57,13 +57,21 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         // Clique: Se for like/comment vai para os comentários do post
         holder.itemView.setOnClickListener(v -> {
-            if (n.getPostId() != null) {
-                Intent intent = new Intent(context, CommentsActivity.class);
+            if (n.getPostId() != null && !n.getPostId().isEmpty()) { // Adicionei verificação de isEmpty
+                Intent intent = new Intent(context, CommentsActivity.class); // Ou PostDetailsActivity, tu decides
                 intent.putExtra("postId", n.getPostId());
                 context.startActivity(intent);
-            } else if (n.getType().equals("follow")) {
+            }
+            // Lógica para Seguir
+            else if ("follow".equals(n.getType())) { // Inverti para evitar NullPointerException se getType for null
                 Intent intent = new Intent(context, PublicProfileActivity.class);
-                intent.putExtra("targetUserId", n.getFromUserId());
+
+                // --- CORREÇÃO AQUI ---
+                // Se a PublicProfileActivity espera "uid", usa "uid".
+                // Se espera "targetUserId", mantém como estava.
+                // Por coerência com a MainActivity, sugiro "uid":
+                intent.putExtra("uid", n.getFromUserId());
+
                 context.startActivity(intent);
             }
         });
@@ -76,13 +84,23 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     public static class NotifViewHolder extends RecyclerView.ViewHolder {
         ImageView imgAvatar;
-        TextView txtName, txtMessage; // Reutilizando IDs do item_user
+        TextView txtName, txtMessage;
+        // Adiciona a referência ao botão (pode ser Button ou MaterialButton)
+        View btnFollow;
 
         public NotifViewHolder(@NonNull View itemView) {
             super(itemView);
             imgAvatar = itemView.findViewById(R.id.searchAvatar);
             txtName = itemView.findViewById(R.id.searchName);
-            txtMessage = itemView.findViewById(R.id.searchUsername); // Usamos o campo username para a mensagem
+            txtMessage = itemView.findViewById(R.id.searchUsername);
+
+            // 1. Encontra o botão pelo ID (CONFIRMA O ID NO TEU XML item_user.xml)
+            btnFollow = itemView.findViewById(R.id.btnSeguir);
+
+            // 2. Esconde o botão imediatamente
+            if (btnFollow != null) {
+                btnFollow.setVisibility(View.GONE);
+            }
         }
     }
 }

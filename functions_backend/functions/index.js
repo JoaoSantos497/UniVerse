@@ -9,25 +9,75 @@ if (admin.apps.length === 0) {
 
 // --- FUNÇÃO 1: ENVIO DE NOTIFICAÇÕES ---
 exports.sendNotification = onDocumentCreated("notifications/{notificationId}", async (event) => {
-    const data = event.data.data();
-    if (!data) return null;
-    const { targetUserId, fromUserId, message: messageText, fromUserName, postId } = data;
-    if (targetUserId === fromUserId) return null;
+    const notificationData = event.data.data();
+    if (!notificationData) {
+        console.log("Dados da notificação estão vazios.");
+        return null;
+    }
+
+    // Desestruturação segura dos dados do documento
+    const {
+        targetUserId,
+        fromUserId,
+        message: messageText,
+        type = "general", // Valor padrão para segurança
+        postId = "",     // Valor padrão para segurança
+        fromUserName = "UniVerse" // Título padrão
+    } = notificationData;
+
+    if (!targetUserId || !fromUserId) {
+         console.log("targetUserId ou fromUserId em falta.");
+         return null;
+    }
+
+    // Previne auto-notificações
+    if (targetUserId === fromUserId) {
+        console.log("Utilizador tentou notificar-se a si mesmo. Ignorando.");
+        return null;
+    }
 
     try {
+        // Obtém o token FCM do utilizador que vai receber a notificação
         const userDoc = await admin.firestore().collection("users").doc(targetUserId).get();
-        if (!userDoc.exists) return null;
-        const fcmToken = userDoc.data().fcmToken;
-        if (!fcmToken) return null;
+        if (!userDoc.exists) {
+            console.log(`Utilizador alvo ${targetUserId} não encontrado.`);
+            return null;
+        }
 
-        const message = {
+        const fcmToken = userDoc.data().fcmToken;
+        if (!fcmToken) {
+            console.log(`Utilizador ${targetUserId} não tem um token FCM.`);
+            return null;
+        }
+
+        // Constrói o payload da mensagem push
+        const payload = {
             token: fcmToken,
-            notification: { title: fromUserName, body: messageText },
-            data: { postId: postId || "", type: data.type || "general" },
-            android: { priority: "high", notification: { channelId: "universe_v3", priority: "high" } }
+            notification: {
+                title: fromUserName,
+                body: messageText
+            },
+            // 'data' é onde colocamos os dados que a app Android irá usar
+            data: {
+                type: type,
+                fromUserId: fromUserId, // ESSENCIAL para abrir o perfil de quem segue
+                postId: postId          // ESSENCIAL para abrir o post de um like/comentário
+            },
+            android: {
+                priority: "high",
+                notification: {
+                    channelId: "universe_v3", // O ID do seu canal de notificação no Android
+                    priority: "high"
+                }
+            }
         };
-        await admin.messaging().send(message);
-    } catch (error) { console.error("Erro na notificação:", error); }
+
+        await admin.messaging().send(payload);
+        console.log(`Notificação do tipo '${type}' enviada com sucesso para ${targetUserId}.`);
+
+    } catch (error) {
+        console.error("Erro ao enviar notificação:", error);
+    }
     return null;
 });
 
@@ -43,7 +93,6 @@ exports.cleanupUserData = auth.user().onDelete(async (user) => {
         followingQuery.forEach(doc => {
             const userSeguidoRef = doc.ref.parent.parent;
             if (userSeguidoRef) {
-                // Prevenção de números negativos: usamos o incremento apenas se necessário
                 batch.update(userSeguidoRef, { followersCount: admin.firestore.FieldValue.increment(-1) });
             }
             batch.delete(doc.ref);
@@ -59,26 +108,28 @@ exports.cleanupUserData = auth.user().onDelete(async (user) => {
             batch.delete(doc.ref);
         });
 
-        // 3. Limpar coleções onde o campo é 'userId' ou 'targetUserId'
+        // 3. Limpar coleções onde o campo é 'userId'
         const collections = ["posts", "comments"];
         for (const name of collections) {
             const q = await db.collection(name).where("userId", "==", uid).get();
             q.forEach(d => batch.delete(d.ref));
         }
 
-        // Notificações precisam de verificação dupla (quem enviou e quem recebeu)
+        // 4. Limpar notificações enviadas e recebidas
         const notifSent = await db.collection("notifications").where("fromUserId", "==", uid).get();
         notifSent.forEach(d => batch.delete(d.ref));
         const notifReceived = await db.collection("notifications").where("targetUserId", "==", uid).get();
         notifReceived.forEach(d => batch.delete(d.ref));
 
+        // 5. Apagar o documento do utilizador
         batch.delete(db.collection("users").doc(uid));
 
         await batch.commit();
         console.log(`Limpeza completa para o UID: ${uid}`);
-    } catch (error) { console.error("Erro na limpeza:", error); }
+    } catch (error) { console.error("Erro na limpeza de dados do utilizador:", error); }
     return null;
 });
+
 
 // --- FUNÇÃO 3: RECALIBRAGEM TOTAL (FORÇA SINCRONIZAÇÃO REAL) ---
 exports.recalibrateCounters = onRequest(async (req, res) => {
@@ -87,11 +138,9 @@ exports.recalibrateCounters = onRequest(async (req, res) => {
         const usersSnapshot = await db.collection("users").get();
         let totalRepaired = 0;
 
-        // Processamos um a um para evitar timeouts em coleções grandes
         for (const userDoc of usersSnapshot.docs) {
             const userId = userDoc.id;
 
-            // Contagem física real dos documentos nas sub-coleções
             const followersSnapshot = await db.collection("users").doc(userId).collection("followers").get();
             const followingSnapshot = await db.collection("users").doc(userId).collection("following").get();
 
@@ -100,7 +149,6 @@ exports.recalibrateCounters = onRequest(async (req, res) => {
 
             const userData = userDoc.data();
 
-            // Só atualiza se houver erro no contador, garantindo que nunca seja negativo
             if (userData.followersCount !== actualFollowers || userData.followingCount !== actualFollowing) {
                 await db.collection("users").doc(userId).update({
                     followersCount: Math.max(0, actualFollowers),

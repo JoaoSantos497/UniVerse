@@ -10,12 +10,10 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -29,57 +27,88 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
+        // Limpeza de cache (opcional)
         FirebaseFirestore.getInstance().clearPersistence().addOnSuccessListener(unused -> {});
 
-        // --- 1. VERIFICAÇÕES DE SEGURANÇA E NOTIFICAÇÕES ---
         verificarEstadoConta();
         verificarPermissaoNotificacao();
         atualizarTokenFCM();
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
 
-            if (itemId == R.id.nav_home) {
-                selectedFragment = new HomeFragment();
-            } else if (itemId == R.id.nav_search) {
-                selectedFragment = new SearchFragment();
-            } else if (itemId == R.id.nav_profile) {
-                selectedFragment = new ProfileFragment();
-            }
+            if (itemId == R.id.nav_home) selectedFragment = new HomeFragment();
+            else if (itemId == R.id.nav_search) selectedFragment = new SearchFragment();
+            else if (itemId == R.id.nav_profile) selectedFragment = new ProfileFragment();
 
             if (selectedFragment != null) {
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
-                        .commit();
+                        .replace(R.id.fragment_container, selectedFragment).commit();
             }
             return true;
         });
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new HomeFragment())
-                    .commit();
+                    .replace(R.id.fragment_container, new HomeFragment()).commit();
+        }
+
+        // --- LÓGICA DE NOTIFICAÇÃO ---
+        checkNotificationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        checkNotificationIntent(intent);
+    }
+
+    private void checkNotificationIntent(Intent intent) {
+        if (intent != null && intent.getExtras() != null) {
+            String type = intent.getStringExtra("type");
+            // ATENÇÃO: Tem de ser "fromUserId" para bater certo com o index.js
+            String userId = intent.getStringExtra("fromUserId");
+            String postId = intent.getStringExtra("postId");
+
+            if (type != null) {
+                Log.d("NOTIF", "Tipo: " + type + ", User: " + userId + ", Post: " + postId);
+
+                switch (type) {
+                    case "follow":
+                        if (userId != null) {
+                            // Abre perfil de outra pessoa
+                            Intent profileIntent = new Intent(this, PublicProfileActivity.class);
+                            profileIntent.putExtra("uid", userId);
+                            startActivity(profileIntent);
+                        }
+                        break;
+
+                    case "like":
+                    case "comment":
+                    case "new_post":
+                        if (postId != null && !postId.isEmpty()) {
+                            // Abre detalhes do post
+                            Intent postIntent = new Intent(this, PostDetailsActivity.class);
+                            postIntent.putExtra("postId", postId);
+                            startActivity(postIntent);
+                        }
+                        break;
+                }
+            }
         }
     }
 
-    /**
-     * Tenta recarregar o perfil do utilizador. Se falhar (user-not-found),
-     * significa que a conta foi apagada no console e força o logout.
-     */
+    // --- MÉTODOS AUXILIARES ---
     private void verificarEstadoConta() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             user.reload().addOnFailureListener(e -> {
-                Log.d("AUTH", "Sessão inválida ou conta eliminada. Redirecionando...");
                 FirebaseAuth.getInstance().signOut();
-
-                // Abre o Login e limpa o histórico de ecrãs
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
@@ -92,10 +121,8 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
-
                 ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        NOTIFICATION_PERMISSION_CODE);
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_CODE);
             }
         }
     }
@@ -106,21 +133,15 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == NOTIFICATION_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Notificações ativadas!", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Não receberás pop-ups de notificações.", Toast.LENGTH_LONG).show();
             }
         }
     }
 
     private void atualizarTokenFCM() {
         if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
-
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
             String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            if (uid != null) {
-                FirebaseFirestore.getInstance().collection("users").document(uid)
-                        .update("fcmToken", token);
-            }
+            FirebaseFirestore.getInstance().collection("users").document(uid).update("fcmToken", token);
         });
     }
 }
