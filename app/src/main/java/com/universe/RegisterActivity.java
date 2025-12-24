@@ -41,7 +41,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         // Inicializar Firebase
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance(); // Inicializar Base de Dados
+        db = FirebaseFirestore.getInstance();
 
         // Ligar variáveis aos IDs do XML
         inputNome = findViewById(R.id.textInputLayoutName);
