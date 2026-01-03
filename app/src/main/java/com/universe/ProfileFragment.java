@@ -140,7 +140,8 @@ public class ProfileFragment extends Fragment {
                                                 .into(profileAvatar);
                                     }
                                 } else {
-                                    profileAvatar.setImageResource(R.drawable.circle_bg);
+                                    profileAvatar.setImageResource(R.drawable.ic_person_filled);
+                                    profileAvatar.setImageResource(R.drawable.ic_person_filled_white);
                                 }
                             }
                         }

@@ -76,8 +76,8 @@
                     android:id="@+id/currentUserImage"
                     android:layout_width="50dp"
                     android:layout_height="50dp"
-                    android:src="@drawable/circle_bg"
-                    android:background="@drawable/circle_bg"
+                    android:src="@drawable/ic_person_filled"
+                    android:background="@drawable/ic_person_filled_white"
                     android:scaleType="centerCrop"/>
 
                 <TextView
@@ -124,7 +124,6 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:src="@android:drawable/ic_menu_close_clear_cancel"
-                    android:background="@drawable/circle_bg"
                     android:backgroundTint="#D32F2F"
                     android:layout_alignParentTop="true"
                     android:layout_alignParentEnd="true"

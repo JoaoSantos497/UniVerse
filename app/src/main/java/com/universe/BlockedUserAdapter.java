@@ -49,7 +49,8 @@ public class BlockedUserAdapter extends RecyclerView.Adapter<BlockedUserAdapter.
         Glide.with(context)
                 .load(user.getPhotoUrl())
                 .circleCrop()
-                .placeholder(R.drawable.circle_bg)
+                .placeholder(R.drawable.ic_person_filled)
+                .placeholder(R.drawable.ic_person_filled_white)
                 .into(holder.image);
 
         holder.btnUnblock.setOnClickListener(v -> {

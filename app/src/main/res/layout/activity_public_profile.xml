@@ -53,7 +53,8 @@
                 android:id="@+id/publicProfileImage"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:src="@drawable/circle_bg"
+                android:src="@drawable/ic_person_filled"
+                android:background="@drawable/ic_person_filled"
                 android:scaleType="centerCrop"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="16dp"/>

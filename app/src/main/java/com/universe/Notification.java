@@ -8,7 +8,7 @@ public class Notification {
     private String fromUserName;
     private String fromUserPhoto;
     private String targetUserId;
-    private String type; // "like", "follow", "comment"
+    private NotificationType type;
     private String message;
     private String postId;
     private Timestamp timestamp;
@@ -19,7 +19,7 @@ public class Notification {
 
     public Notification() { }
 
-    public Notification(String fromUserId, String fromUserName, String fromUserPhoto, String targetUserId, String type, String message, String postId, Timestamp timestamp) {
+    public Notification(String fromUserId, String fromUserName, String fromUserPhoto, String targetUserId, NotificationType type, String message, String postId, Timestamp timestamp) {
         this.fromUserId = fromUserId;
         this.fromUserName = fromUserName;
         this.fromUserPhoto = fromUserPhoto;
@@ -46,8 +46,8 @@ public class Notification {
     public void setFromUserPhoto(String fromUserPhoto) { this.fromUserPhoto = fromUserPhoto; }
     public String getTargetUserId() { return targetUserId; }
     public void setTargetUserId(String targetUserId) { this.targetUserId = targetUserId; }
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public NotificationType getType() { return type; }
+    public void setType(NotificationType type) { this.type = type; }
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
     public String getPostId() { return postId; }

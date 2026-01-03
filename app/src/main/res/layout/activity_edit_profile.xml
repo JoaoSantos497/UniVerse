@@ -36,9 +36,9 @@
                 android:id="@+id/imgEditAvatar"
                 android:layout_width="120dp"
                 android:layout_height="120dp"
-                android:src="@drawable/circle_bg"
+                android:src="@drawable/ic_person_filled"
+                android:background="@drawable/ic_person_filled"
                 android:scaleType="centerCrop"
-                android:background="@drawable/circle_bg"
                 android:padding="2dp"
                 android:layout_marginBottom="8dp"/>
 

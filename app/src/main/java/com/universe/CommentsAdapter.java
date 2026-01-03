@@ -75,7 +75,7 @@ public class CommentsAdapter extends RecyclerView.Adapter<CommentsAdapter.Commen
         Glide.with(context)
                 .load(comment.getUserPhotoUrl())
                 .circleCrop()
-                .placeholder(R.drawable.circle_bg)
+                .placeholder(R.drawable.ic_person_filled)
                 .into(holder.imgProfile);
 
         // Imagem Anexada ao Comentário

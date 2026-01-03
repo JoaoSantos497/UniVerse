@@ -12,7 +12,8 @@
         android:id="@+id/blockedUserImage"
         android:layout_width="45dp"
         android:layout_height="45dp"
-        android:src="@drawable/circle_bg"
+        android:src="@drawable/ic_person_filled"
+        android:background="@drawable/ic_person_filled"
         android:scaleType="centerCrop"/>
 
     <TextView

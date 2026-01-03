@@ -15,7 +15,8 @@
         android:id="@+id/commentProfileImage"
         android:layout_width="36dp"
         android:layout_height="36dp"
-        android:src="@drawable/circle_bg"
+        android:src="@drawable/ic_person_filled"
+        android:background="@drawable/ic_person_filled"
         android:scaleType="centerCrop"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

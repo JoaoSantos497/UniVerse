@@ -237,17 +237,10 @@ public class PublicProfileActivity extends AppCompatActivity {
     }
 
     private Task<Void> executarFollow() {
-        return userService.getUser(currentUserId)
-                .onSuccessTask(user -> {
-                    if (user.isEmpty()) {
-                        throw new IllegalStateException("User não existe");
-                    }
-                    WriteBatch batch = db.batch();
-                    userService.followUser(batch, targetUserId);
-                    notificationService.sendNotification(batch, user.get(), targetUserId, FOLLOW);
-
-                    return batch.commit();
-                });
+        WriteBatch batch = db.batch();
+        userService.followUser(batch, targetUserId);
+        return notificationService.sendNotification(batch, targetUserId, FOLLOW)
+                .onSuccessTask(WriteBatch::commit);
     }
 
     private void deixarDeSeguir() {

@@ -2,6 +2,8 @@ package com.universe;
 
 import static java.util.Collections.emptyMap;
 
+import android.content.res.Resources.NotFoundException;
+
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
@@ -26,38 +28,35 @@ public class NotificationService {
 
     // --- 1. SEGUIR (BATCH) ---
     // Agora este metodo já vai ter acesso ao 'myName' através do metodo 'notification()'
-    public WriteBatch sendNotification(WriteBatch batch, User user, String tUid, NotificationType type) {
-        if (tUid.equals(myUid)) return batch;
-
-        DocumentReference notifRef = db.collection("notifications").document();
-        Map<String, Object> notif = notification(user, tUid, type, emptyMap()); // O segredo está aqui dentro agora
-
-        batch.set(notifRef, notif);
-
-        return batch;
+    public Task<WriteBatch> sendNotification(WriteBatch batch, String tUid, NotificationType type) {
+        return notification(tUid, type, emptyMap()).onSuccessTask(n -> {
+            DocumentReference notifRef = db.collection("notifications").document();
+            batch.set(notifRef, n);
+            return Tasks.forResult(batch);
+        });
     }
 
     // --- 2. NOTIFICAÇÃO SIMPLES (Geral) ---
-    public Task<Boolean> sendNotification(String targetId, NotificationType type) {
+    public Task<DocumentReference> sendNotification(String targetId, NotificationType type) {
         return sendNotification(targetId, type, emptyMap());
     }
 
     // --- 3. LIKES E COMENTÁRIOS (Com objeto User) ---
-    public Task<Boolean> sendNotification(String targetId, NotificationType type, String postId) {
+    public Task<DocumentReference> sendNotification(String targetId, NotificationType type, String postId) {
         return sendNotification(targetId, type, Map.of("postId", postId != null ? postId : ""));
     }
 
-    private Task<Boolean> sendNotification(String targetId, NotificationType type, Map<String, Object> additional) {
-        if (targetId.equals(myUid)) Tasks.forResult(false);
-        return userService.getUser(myUid).onSuccessTask(userOpt ->
-                userOpt.map(user -> sendNotification(user, targetId, type, additional)
-                .onSuccessTask(it -> Tasks.forResult(true)))
-                        .orElseGet(() -> Tasks.forResult(false)));
+    private Task<DocumentReference> sendNotification(String targetId, NotificationType type, Map<String, Object> additional) {
+        return notification(targetId, type, additional)
+                .onSuccessTask(n -> db.collection("notifications").add(n));
     }
 
-    private Task<DocumentReference> sendNotification(User user, String targetId, NotificationType type, Map<String, Object> additional) {
-        Map<String, Object> n = notification(user, targetId, type, additional);
-        return db.collection("notifications").add(n);
+    private Task<Map<String, Object>> notification(String targetId, NotificationType type, Map<String, Object> additional) {
+        if (targetId.equals(myUid)) return Tasks.forException(new IllegalArgumentException("User cannot notify themselves"));
+        return userService.getUser(myUid)
+                .onSuccessTask(userOpt ->
+                        userOpt.map(user -> Tasks.forResult(notification(user, targetId, type, additional)))
+                                .orElseGet(() -> Tasks.forException(new NotFoundException())));
     }
 
     // --- Metodo auxiliar ---
@@ -66,7 +65,7 @@ public class NotificationService {
         notif.put("targetUserId", tUid);
         notif.put("fromUserId", user.getUid());
         notif.put("message", type.getMessage());
-        notif.put("type", type.getType());
+        notif.put("type", type);
         notif.put("timestamp", FieldValue.serverTimestamp());
         notif.put("read", false);
 

@@ -108,7 +108,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         Glide.with(context)
                 .load(user.getPhotoUrl())
                 .circleCrop()
-                .placeholder(R.drawable.circle_bg)
+                .placeholder(R.drawable.ic_person_filled)
+                .placeholder(R.drawable.ic_person_filled_white)
                 .into(holder.imgAvatar);
 
         // --- LÓGICA DO BOTÃO SEGUIR ATUALIZADA ---
@@ -168,17 +169,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     }
 
     private Task<Void> executarFollow(User targetUser, MaterialButton btn) {
-        return userService.getUser(myUid)
-                .onSuccessTask(user -> {
-                    if (user.isEmpty()) {
-                        throw new IllegalStateException("User não existe");
-                    }
-                    WriteBatch batch = db.batch();
-                    userService.followUser(batch, targetUser.getUid());
-                    notificationService.sendNotification(batch, user.get(), targetUser.getUid(), FOLLOW);
-
-                    return batch.commit();
-                }).onSuccessTask(aVoid -> {
+        WriteBatch batch = db.batch();
+        userService.followUser(batch, targetUser.getUid());
+        return notificationService.sendNotification(batch, targetUser.getUid(), FOLLOW)
+                .onSuccessTask(WriteBatch::commit)
+                .onSuccessTask(aVoid -> {
                     configurarBotaoSeguindo(btn);
                     return Tasks.forResult(null);
                 });

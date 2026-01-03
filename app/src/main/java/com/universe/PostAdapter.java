@@ -84,7 +84,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         db.collection("users").document(post.getUserId()).get().addOnSuccessListener(doc -> {
             if (doc.exists() && context != null) {
                 String url = doc.getString("photoUrl");
-                Glide.with(context).load(url).circleCrop().placeholder(R.drawable.circle_bg).into(holder.imgProfile);
+                Glide.with(context).load(url).circleCrop().placeholder(R.drawable.ic_person_filled).into(holder.imgProfile);
             }
         });
 
