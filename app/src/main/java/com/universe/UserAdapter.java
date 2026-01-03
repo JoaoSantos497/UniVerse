@@ -1,7 +1,5 @@
 package com.universe;
 
-import static com.universe.NotificationType.FOLLOW;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -171,8 +169,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private Task<Void> executarFollow(User targetUser, MaterialButton btn) {
         WriteBatch batch = db.batch();
         userService.followUser(batch, targetUser.getUid());
-        return notificationService.sendNotification(batch, targetUser.getUid(), FOLLOW)
-                .onSuccessTask(WriteBatch::commit)
+        return notificationService.addFollowNotificationToBatch(batch, targetUser.getUid())
+                .onSuccessTask(it -> batch.commit())
                 .onSuccessTask(aVoid -> {
                     configurarBotaoSeguindo(btn);
                     return Tasks.forResult(null);

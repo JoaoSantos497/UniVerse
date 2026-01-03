@@ -1,84 +1,184 @@
 package com.universe;
 
-import static java.util.Collections.emptyMap;
+import static com.google.firebase.firestore.Query.Direction.DESCENDING;
+import static com.universe.NotificationType.FOLLOW;
 
 import android.content.res.Resources.NotFoundException;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.WriteBatch;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class NotificationService {
+
+    private static String TARGET_USER_ID = "targetUserId";
+    private static String TIMESTAMP = "timestamp";
+    private static String READ = "read";
+
     private final UserService userService;
-    private FirebaseFirestore db;
-    private String myUid;
+    private final FirebaseFirestore db;
+    private final String myUid;
 
     public NotificationService(UserService userService) {
         this.userService = userService;
-        this.myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         this.db = FirebaseFirestore.getInstance();
+        this.myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
     }
 
-    // --- 1. SEGUIR (BATCH) ---
-    // Agora este metodo já vai ter acesso ao 'myName' através do metodo 'notification()'
-    public Task<WriteBatch> sendNotification(WriteBatch batch, String tUid, NotificationType type) {
-        return notification(tUid, type, emptyMap()).onSuccessTask(n -> {
-            DocumentReference notifRef = db.collection("notifications").document();
-            batch.set(notifRef, n);
-            return Tasks.forResult(batch);
-        });
+    public ListenerRegistration listenToNotifications(
+            String targetUserId,
+            DataListener<List<Notification>> listener
+    ) {
+        return notificationCollectionRef()
+                .whereEqualTo(TARGET_USER_ID, targetUserId)
+                .orderBy(TIMESTAMP, DESCENDING)
+                .addSnapshotListener((snapshots, error) -> {
+
+                    if (error != null) {
+                        listener.onError(error);
+                        return;
+                    }
+
+                    if (snapshots == null) {
+                        listener.onData(new ArrayList<>());
+                        return;
+                    }
+
+                    List<Notification> result = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        Notification n = doc.toObject(Notification.class);
+                        if (n != null) {
+                            n.setNotificationId(doc.getId());
+                            result.add(n);
+                        }
+                    }
+
+                    listener.onData(result);
+                });
     }
 
-    // --- 2. NOTIFICAÇÃO SIMPLES (Geral) ---
-    public Task<DocumentReference> sendNotification(String targetId, NotificationType type) {
-        return sendNotification(targetId, type, emptyMap());
+    public ListenerRegistration listenForUnreadNotifications(
+            String targetUserId,
+            DataListener<Boolean> listener
+    ) {
+        return notificationCollectionRef()
+                .whereEqualTo(TARGET_USER_ID, targetUserId)
+                .whereEqualTo(READ, false)
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        listener.onError(error);
+                        return;
+                    }
+
+                    boolean hasUnread = snapshots != null && !snapshots.isEmpty();
+
+                    listener.onData(hasUnread);
+                });
     }
 
-    // --- 3. LIKES E COMENTÁRIOS (Com objeto User) ---
-    public Task<DocumentReference> sendNotification(String targetId, NotificationType type, String postId) {
-        return sendNotification(targetId, type, Map.of("postId", postId != null ? postId : ""));
+    public Task<Void> markAsRead(List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) {
+            return Tasks.forResult(null);
+        }
+
+        WriteBatch batch = db.batch();
+
+        notifications.stream()
+                .filter(n -> !n.isRead())
+                .map(Notification::getNotificationId)
+                .filter(Objects::nonNull)
+                .map(id -> notificationCollectionRef().document(id))
+                .forEach(ref -> batch.update(ref, READ, true));
+
+        return batch.commit();
     }
 
-    private Task<DocumentReference> sendNotification(String targetId, NotificationType type, Map<String, Object> additional) {
-        return notification(targetId, type, additional)
-                .onSuccessTask(n -> db.collection("notifications").add(n));
+    public Task<Void> addFollowNotificationToBatch(WriteBatch batch, String targetUserId) {
+        return createNotificationInternal(targetUserId, FOLLOW, null)
+                .onSuccessTask(notification -> {
+                    DocumentReference ref = notificationRef();
+                    batch.set(ref, notification);
+                    return Tasks.forResult(null);
+                });
     }
 
-    private Task<Map<String, Object>> notification(String targetId, NotificationType type, Map<String, Object> additional) {
-        if (targetId.equals(myUid)) return Tasks.forException(new IllegalArgumentException("User cannot notify themselves"));
+    public Task<Notification> sendNotification(
+            String targetUserId,
+            NotificationType type
+    ) {
+        return sendNotificationInternal(targetUserId, type, null);
+    }
+
+    public Task<Notification> sendNotification(
+            String targetUserId,
+            NotificationType type,
+            String postId
+    ) {
+        return sendNotificationInternal(targetUserId, type, postId);
+    }
+
+    private Task<Notification> sendNotificationInternal(
+            String targetUserId,
+            NotificationType type,
+            String postId
+    ) {
+        return createNotificationInternal(targetUserId, type, postId)
+                .onSuccessTask(notification ->
+                        notificationCollectionRef()
+                                .add(notification)
+                                .onSuccessTask(ref -> {
+                                    notification.setNotificationId(ref.getId());
+                                    return Tasks.forResult(notification);
+                                })
+                );
+    }
+
+    private DocumentReference notificationRef() {
+        return notificationCollectionRef().document();
+    }
+
+    private CollectionReference notificationCollectionRef() {
+        return db.collection("notifications");
+    }
+
+    private Task<Notification> createNotificationInternal(
+            String targetUserId,
+            NotificationType type,
+            String postId
+    ) {
+        if (targetUserId.equals(myUid)) {
+            return Tasks.forException(
+                    new IllegalStateException("User cannot notify themselves")
+            );
+        }
+
         return userService.getUser(myUid)
                 .onSuccessTask(userOpt ->
-                        userOpt.map(user -> Tasks.forResult(notification(user, targetId, type, additional)))
-                                .orElseGet(() -> Tasks.forException(new NotFoundException())));
-    }
-
-    // --- Metodo auxiliar ---
-    private Map<String, Object> notification(User user, String tUid, NotificationType type, Map<String, Object> additional) {
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("targetUserId", tUid);
-        notif.put("fromUserId", user.getUid());
-        notif.put("message", type.getMessage());
-        notif.put("type", type);
-        notif.put("timestamp", FieldValue.serverTimestamp());
-        notif.put("read", false);
-
-        if (user.getNome() != null && !user.getNome().isEmpty()) {
-            notif.put("fromUserName", user.getNome());
-        }
-
-        if (user.getPhotoUrl() != null) {
-            notif.put("fromUserPhoto", user.getPhotoUrl());
-        }
-
-        notif.putAll(additional);
-
-        return notif;
+                        userOpt.map(user ->
+                                Tasks.forResult(
+                                        new Notification(
+                                                user.getUid(),
+                                                user.getNome(),
+                                                user.getPhotoUrl(),
+                                                targetUserId,
+                                                type,
+                                                postId
+                                        )
+                                )
+                        ).orElseGet(() ->
+                                Tasks.forException(new NotFoundException())
+                        )
+                );
     }
 }

@@ -60,7 +60,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         // Clique: Se for like/comment vai para os comentários do post
         holder.itemView.setOnClickListener(v -> {
-            if (n.getPostId() != null && !n.getPostId().isEmpty()) { // Adicionei verificação de isEmpty
+            if (n.getPostIdOptional().isPresent()) { // Adicionei verificação de isEmpty
                 Intent intent = new Intent(context, CommentsActivity.class); // Ou PostDetailsActivity, tu decides
                 intent.putExtra("postId", n.getPostId());
                 context.startActivity(intent);

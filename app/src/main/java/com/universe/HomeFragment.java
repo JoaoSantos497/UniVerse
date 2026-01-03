@@ -31,6 +31,8 @@ public class HomeFragment extends Fragment {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private FeedPagerAdapter pagerAdapter;
+    private NotificationService notificationService;
+    private UserService userService;
 
     @Nullable
     @Override
@@ -39,6 +41,8 @@ public class HomeFragment extends Fragment {
 
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
+        userService = new UserService();
+        notificationService = new NotificationService(userService);
 
         // 1. Inicializar componentes
         fabCreatePost = view.findViewById(R.id.fabCreatePost);
@@ -78,37 +82,43 @@ public class HomeFragment extends Fragment {
         });
 
         // 5. Iniciar escuta de notificações
-        verificarNotificacoesNaoLidas();
+        startUnreadListener();
 
         return view;
     }
 
-    private void verificarNotificacoesNaoLidas() {
+    private void startUnreadListener() {
         if (mAuth.getCurrentUser() == null) return;
-        String myId = mAuth.getCurrentUser().getUid();
 
-        // Remove listener anterior se existir para evitar fugas de memória
-        if (badgeListener != null) badgeListener.remove();
+        if (badgeListener != null) {
+            badgeListener.remove();
+        }
 
-        badgeListener = db.collection("notifications")
-                .whereEqualTo("targetUserId", myId)
-                .whereEqualTo("read", false)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null || notificationBadge == null) return;
+        badgeListener =
+                notificationService.listenForUnreadNotifications(
+                        mAuth.getCurrentUser().getUid(),
+                        new DataListener<Boolean>() {
+                            @Override
+                            public void onData(Boolean hasUnread) {
+                                if (notificationBadge == null) return;
+                                notificationBadge.setVisibility(
+                                        hasUnread ? View.VISIBLE : View.GONE
+                                );
+                            }
 
-                    if (value != null && !value.isEmpty()) {
-                        notificationBadge.setVisibility(View.VISIBLE);
-                    } else {
-                        notificationBadge.setVisibility(View.GONE);
-                    }
-                });
+                            @Override
+                            public void onError(Exception e) {
+                                // optional: log / analytics
+                            }
+                        }
+                );
     }
 
     @Override
     public void onResume() {
         super.onResume();
         // Garante que a badge atualiza ao voltar para a home
-        verificarNotificacoesNaoLidas();
+        startUnreadListener();
     }
 
     @Override

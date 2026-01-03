@@ -1,5 +1,7 @@
 package com.universe;
 
+import static com.universe.NotificationType.POST;
+
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -196,7 +198,7 @@ public class CreatePostActivity extends AppCompatActivity {
                         Toast.makeText(this, "Publicado!", Toast.LENGTH_SHORT).show();
                         db.collection("users").document(mAuth.getCurrentUser().getUid()).collection("followers").get().addOnSuccessListener(querySnapshot -> {
                             for (com.google.firebase.firestore.DocumentSnapshot document : querySnapshot.getDocuments()) {
-                                notificationService.sendNotification(document.getId(), NotificationType.POST);
+                                notificationService.sendNotification(document.getId(), POST);
                             }
                         });
 

@@ -141,7 +141,6 @@ public class ProfileFragment extends Fragment {
                                     }
                                 } else {
                                     profileAvatar.setImageResource(R.drawable.ic_person_filled);
-                                    profileAvatar.setImageResource(R.drawable.ic_person_filled_white);
                                 }
                             }
                         }

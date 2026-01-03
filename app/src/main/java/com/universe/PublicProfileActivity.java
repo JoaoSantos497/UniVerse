@@ -1,7 +1,5 @@
 package com.universe;
 
-import static com.universe.NotificationType.FOLLOW;
-
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -239,8 +237,8 @@ public class PublicProfileActivity extends AppCompatActivity {
     private Task<Void> executarFollow() {
         WriteBatch batch = db.batch();
         userService.followUser(batch, targetUserId);
-        return notificationService.sendNotification(batch, targetUserId, FOLLOW)
-                .onSuccessTask(WriteBatch::commit);
+        return notificationService.addFollowNotificationToBatch(batch, targetUserId)
+                .onSuccessTask(it -> batch.commit());
     }
 
     private void deixarDeSeguir() {
