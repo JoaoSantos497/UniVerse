@@ -44,7 +44,6 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private NotificationService notificationService;
 
-
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<String> mGetContent;
 
@@ -60,7 +59,7 @@ public class CreatePostActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
         userService = new UserService();
-        notificationService = new NotificationService();
+        notificationService = new NotificationService(userService);
 
 
         ligarComponentes();
@@ -199,7 +198,7 @@ public class CreatePostActivity extends AppCompatActivity {
                             for (com.google.firebase.firestore.DocumentSnapshot document : querySnapshot.getDocuments()) {
                                 notificationService.sendNotification(document.getId(), NotificationType.POST);
                             }
-                                });
+                        });
 
                         finish(); // Ao fechar, o FeedTabFragment já terá o post novo via SnapshotListener
                     })

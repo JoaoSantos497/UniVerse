@@ -17,18 +17,16 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
@@ -50,7 +48,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         this.userList = userList;
         this.mostrarBotaoSeguir = mostrarBotaoSeguir;
         this.userService = new UserService();
-        this.notificationService = new NotificationService();
+        this.notificationService = new NotificationService(userService);
 
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -160,38 +158,39 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private void alternarFollow(User targetUser, MaterialButton btn) {
         btn.setEnabled(false);
         String targetUid = targetUser.getUid();
+        userService.getFollowing(targetUid).onSuccessTask(exists -> {
+            if (exists) {
+                return executarUnfollow(targetUid, btn);
+            } else {
+                return executarFollow(targetUser, btn);
+            }
+        }).addOnCompleteListener(aVoid -> btn.setEnabled(true));
+    }
 
-        db.collection("users").document(myUid).collection("following").document(targetUid)
-                .get().addOnSuccessListener(doc -> {
-                    if (doc.exists()) {
-                        executarUnfollow(targetUid, btn);
-                    } else {
-                        executarFollow(targetUser, btn);
+    private Task<Void> executarFollow(User targetUser, MaterialButton btn) {
+        return userService.getUser(myUid)
+                .onSuccessTask(user -> {
+                    if (user.isEmpty()) {
+                        throw new IllegalStateException("User não existe");
                     }
-                }).addOnFailureListener(e -> btn.setEnabled(true));
+                    WriteBatch batch = db.batch();
+                    userService.followUser(batch, targetUser.getUid());
+                    notificationService.sendNotification(batch, user.get(), targetUser.getUid(), FOLLOW);
+
+                    return batch.commit();
+                }).onSuccessTask(aVoid -> {
+                    configurarBotaoSeguindo(btn);
+                    return Tasks.forResult(null);
+                });
     }
 
-    private void executarFollow(User targetUser, MaterialButton btn) {
+    private Task<Void> executarUnfollow(String tUid, MaterialButton btn) {
         WriteBatch batch = db.batch();
-        String tUid = targetUser.getUid();
-        batch = userService.followUser(batch, tUid);
-        batch = notificationService.sendNotification(batch, tUid, FOLLOW);
-
-        batch.commit().addOnSuccessListener(aVoid -> {
-            configurarBotaoSeguindo(btn);
-            btn.setEnabled(true);
-        }).addOnFailureListener(e -> btn.setEnabled(true));
-    }
-
-    private void executarUnfollow(String tUid, MaterialButton btn) {
-        WriteBatch batch = db.batch();
-
         batch = userService.unfollowUser(batch, tUid);
-
-        batch.commit().addOnSuccessListener(aVoid -> {
+        return batch.commit().onSuccessTask(aVoid -> {
             configurarBotaoSeguir(btn);
-            btn.setEnabled(true);
-        }).addOnFailureListener(e -> btn.setEnabled(true));
+            return Tasks.forResult(null);
+        });
     }
 
     @Override

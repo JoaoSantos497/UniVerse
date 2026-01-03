@@ -5,7 +5,6 @@ import static com.universe.NotificationType.FOLLOW;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -21,10 +20,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.android.material.button.MaterialButton;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentChange;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -60,8 +58,6 @@ public class PublicProfileActivity extends AppCompatActivity {
 
     private NotificationService notificationService;
 
-
-
     // Gestão de Listeners para evitar crashes e gastos de dados
     private ListenerRegistration perfilListener, blockListener, followListener, postListener;
 
@@ -74,7 +70,7 @@ public class PublicProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_public_profile);
         userService = new UserService();
-        notificationService = new NotificationService();
+        notificationService = new NotificationService(userService);
         targetUserId = getIntent().getStringExtra("targetUserId");
         if (targetUserId == null) {
             Toast.makeText(this, "Erro: Utilizador não encontrado", Toast.LENGTH_SHORT).show();
@@ -231,23 +227,27 @@ public class PublicProfileActivity extends AppCompatActivity {
     private void seguirUtilizador() {
         if (isFollowing) return;
         btnFollow.setEnabled(false);
-        DocumentReference refFollowing = db.collection("users").document(currentUserId).collection("following").document(targetUserId);
-        refFollowing.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && !task.getResult().exists()) {
-                executarFollow();
+        userService.getFollowing(targetUserId).onSuccessTask(exists -> {
+            if (exists) {
+                return Tasks.forResult(null);
             } else {
-                btnFollow.setEnabled(true);
+                return executarFollow();
             }
-        });
+        }).addOnCompleteListener(aVoid -> btnFollow.setEnabled(true));
     }
 
-    private void executarFollow() {
-        WriteBatch batch = db.batch();
-        batch = userService.followUser(batch, targetUserId);
-        batch = notificationService.sendNotification(batch, targetUserId, FOLLOW);
-        batch.commit().addOnSuccessListener(aVoid -> {
-            btnFollow.setEnabled(true);
-        }).addOnFailureListener(e -> btnFollow.setEnabled(true));
+    private Task<Void> executarFollow() {
+        return userService.getUser(currentUserId)
+                .onSuccessTask(user -> {
+                    if (user.isEmpty()) {
+                        throw new IllegalStateException("User não existe");
+                    }
+                    WriteBatch batch = db.batch();
+                    userService.followUser(batch, targetUserId);
+                    notificationService.sendNotification(batch, user.get(), targetUserId, FOLLOW);
+
+                    return batch.commit();
+                });
     }
 
     private void deixarDeSeguir() {
