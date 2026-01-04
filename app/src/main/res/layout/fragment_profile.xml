@@ -87,7 +87,7 @@
                             android:layout_height="wrap_content"
                             android:text="email@exemplo.com"
                             android:textSize="13sp"
-                            android:textColor="?android:attr/textColorSecondary"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:layout_marginTop="2dp"
                             android:layout_marginBottom="16dp"/>
 
@@ -119,8 +119,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Seguidores"
-                                    android:textColor="?android:attr/textColorSecondary"
-                                    android:textSize="12sp"
+                                    android:textColor="?android:attr/textColorPrimary"                                    android:textSize="12sp"
                                     android:textAllCaps="true"/>
                             </LinearLayout>
 
@@ -150,7 +149,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="A Seguir"
-                                    android:textColor="?android:attr/textColorSecondary"
+                                    android:textColor="?android:attr/textColorPrimary"
                                     android:textSize="12sp"
                                     android:textAllCaps="true"/>
                             </LinearLayout>
@@ -160,8 +159,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:background="@drawable/bg_search_outline"
-                            android:backgroundTint="#08000000"
+                            android:background="@drawable/bg_rounded_border_black"
                             android:padding="16dp"
                             android:gravity="center"
                             android:layout_marginBottom="20dp">
@@ -182,7 +180,7 @@
                                 android:text="Universidade..."
                                 android:textSize="13sp"
                                 android:textAlignment="center"
-                                android:textColor="?android:attr/textColorSecondary"
+                                android:textColor="?android:attr/textColorPrimary"
                                 android:layout_marginTop="4dp"/>
                         </LinearLayout>
 
