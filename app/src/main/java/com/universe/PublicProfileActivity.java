@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout; // IMPORTANTE: Importar isto
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,7 +41,9 @@ public class PublicProfileActivity extends AppCompatActivity {
     private Button btnFollow, btnMessage;
     private ImageButton btnBack, btnOptions;
 
-    private LinearLayout layoutBlocked;
+    // CORREÇÃO: Mudou de LinearLayout para ConstraintLayout (conforme o novo XML)
+    private ConstraintLayout layoutBlocked;
+
     private Button btnUnblock;
     private View profileContent;
 
@@ -53,10 +56,9 @@ public class PublicProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
 
     private UserService userService;
-
     private NotificationService notificationService;
 
-    // Gestão de Listeners para evitar crashes e gastos de dados
+    // Gestão de Listeners
     private ListenerRegistration perfilListener, blockListener, followListener, postListener;
 
     private String targetUserId;
@@ -67,9 +69,16 @@ public class PublicProfileActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_public_profile);
+
         userService = new UserService();
         notificationService = new NotificationService(userService);
+
         targetUserId = getIntent().getStringExtra("targetUserId");
+        // Verifica também se o intent veio com "uid" (algumas partes do código usam "uid")
+        if (targetUserId == null) {
+            targetUserId = getIntent().getStringExtra("uid");
+        }
+
         if (targetUserId == null) {
             Toast.makeText(this, "Erro: Utilizador não encontrado", Toast.LENGTH_SHORT).show();
             finish();
@@ -85,7 +94,6 @@ public class PublicProfileActivity extends AppCompatActivity {
         initViews();
         setupButtons();
 
-        // Ordem de execução: 1. Bloqueio -> 2. Dados
         verificarBloqueio();
         carregarDadosPerfil();
         carregarPostsDoUtilizador();
@@ -106,8 +114,12 @@ public class PublicProfileActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBackPublic);
         btnOptions = findViewById(R.id.btnProfileOptions);
 
+        // O layoutBlocked agora é um ConstraintLayout no XML novo
         layoutBlocked = findViewById(R.id.layoutBlocked);
+
         btnUnblock = findViewById(R.id.btnUnblock);
+
+        // No XML novo, usamos CoordinatorLayout, mas View é genérico e funciona
         profileContent = findViewById(R.id.profileContentContainer);
 
         recyclerView = findViewById(R.id.recyclerPublicPosts);
@@ -121,10 +133,18 @@ public class PublicProfileActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-        btnBack.setOnClickListener(v -> finish());
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
         setupOptionsButton();
-        btnMessage.setOnClickListener(v -> Toast.makeText(this, "Chat em breve!", Toast.LENGTH_SHORT).show());
-        btnUnblock.setOnClickListener(v -> desbloquearUtilizador());
+
+        if (btnMessage != null) {
+            btnMessage.setOnClickListener(v -> Toast.makeText(this, "Chat em breve!", Toast.LENGTH_SHORT).show());
+        }
+
+        if (btnUnblock != null) {
+            btnUnblock.setOnClickListener(v -> desbloquearUtilizador());
+        }
     }
 
     private void verificarBloqueio() {
@@ -139,9 +159,15 @@ public class PublicProfileActivity extends AppCompatActivity {
     }
 
     private void mostrarInterfaceBloqueado(boolean isBlocked) {
-        layoutBlocked.setVisibility(isBlocked ? View.VISIBLE : View.GONE);
-        profileContent.setVisibility(isBlocked ? View.GONE : View.VISIBLE);
-        btnOptions.setVisibility(isBlocked ? View.GONE : View.VISIBLE);
+        if (layoutBlocked != null) {
+            layoutBlocked.setVisibility(isBlocked ? View.VISIBLE : View.GONE);
+        }
+        if (profileContent != null) {
+            profileContent.setVisibility(isBlocked ? View.GONE : View.VISIBLE);
+        }
+        if (btnOptions != null) {
+            btnOptions.setVisibility(isBlocked ? View.GONE : View.VISIBLE);
+        }
     }
 
     private void bloquearUtilizador() {
@@ -167,7 +193,6 @@ public class PublicProfileActivity extends AppCompatActivity {
     private void carregarDadosPerfil() {
         perfilListener = db.collection("users").document(targetUserId)
                 .addSnapshotListener((doc, error) -> {
-                    // CORREÇÃO: Evita o crash do Glide verificando se a Activity está viva
                     if (isDestroyed() || isFinishing()) return;
                     if (error != null || doc == null || !doc.exists()) return;
 
@@ -192,14 +217,16 @@ public class PublicProfileActivity extends AppCompatActivity {
 
     private void setupFollowLogic() {
         if (currentUserId != null && currentUserId.equals(targetUserId)) {
-            btnFollow.setVisibility(View.GONE);
-            btnMessage.setVisibility(View.GONE);
+            if (btnFollow != null) btnFollow.setVisibility(View.GONE);
+            if (btnMessage != null) btnMessage.setVisibility(View.GONE);
         } else {
             verificarSeJaSegue();
-            btnFollow.setOnClickListener(v -> {
-                if (isFollowing) deixarDeSeguir();
-                else seguirUtilizador();
-            });
+            if (btnFollow != null) {
+                btnFollow.setOnClickListener(v -> {
+                    if (isFollowing) deixarDeSeguir();
+                    else seguirUtilizador();
+                });
+            }
         }
     }
 
@@ -210,14 +237,16 @@ public class PublicProfileActivity extends AppCompatActivity {
                     if (isDestroyed() || isFinishing()) return;
 
                     isFollowing = value != null && value.exists();
-                    if (isFollowing) {
-                        btnFollow.setText("A Seguir");
-                        btnFollow.setBackgroundColor(Color.GRAY);
-                        btnFollow.setTextColor(Color.BLACK);
-                    } else {
-                        btnFollow.setText("Seguir");
-                        btnFollow.setBackgroundColor(ContextCompat.getColor(this, R.color.purple_500));
-                        btnFollow.setTextColor(Color.WHITE);
+                    if (btnFollow != null) {
+                        if (isFollowing) {
+                            btnFollow.setText("A Seguir");
+                            btnFollow.setBackgroundColor(Color.GRAY);
+                            btnFollow.setTextColor(Color.BLACK);
+                        } else {
+                            btnFollow.setText("Seguir");
+                            btnFollow.setBackgroundColor(ContextCompat.getColor(this, R.color.purple_500));
+                            btnFollow.setTextColor(Color.WHITE);
+                        }
                     }
                 });
     }
@@ -244,9 +273,7 @@ public class PublicProfileActivity extends AppCompatActivity {
     private void deixarDeSeguir() {
         btnFollow.setEnabled(false);
         WriteBatch batch = db.batch();
-
         batch = userService.unfollowUser(batch, targetUserId);
-
         batch.commit().addOnSuccessListener(aVoid -> btnFollow.setEnabled(true))
                 .addOnFailureListener(e -> btnFollow.setEnabled(true));
     }
@@ -282,7 +309,6 @@ public class PublicProfileActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // ESSENCIAL: Remove todos os listeners para evitar crashes e gastos desnecessários
         if (perfilListener != null) perfilListener.remove();
         if (blockListener != null) blockListener.remove();
         if (followListener != null) followListener.remove();
@@ -290,28 +316,29 @@ public class PublicProfileActivity extends AppCompatActivity {
     }
 
     private void setupOptionsButton() {
-        btnOptions.setOnClickListener(v -> {
-            PopupMenu popup = new PopupMenu(this, v);
-            popup.getMenu().add(0, 1, 0, "Denunciar");
-            popup.getMenu().add(0, 2, 0, "Bloquear");
-            popup.setOnMenuItemClickListener(item -> {
-                if (item.getItemId() == 2) { bloquearUtilizador(); return true; }
-                return false;
+        if (btnOptions != null) {
+            btnOptions.setOnClickListener(v -> {
+                PopupMenu popup = new PopupMenu(this, v);
+                popup.getMenu().add(0, 1, 0, "Denunciar");
+                popup.getMenu().add(0, 2, 0, "Bloquear");
+                popup.setOnMenuItemClickListener(item -> {
+                    if (item.getItemId() == 2) { bloquearUtilizador(); return true; }
+                    return false;
+                });
+                popup.show();
             });
-            popup.show();
-        });
+        }
     }
 
     private void setupClickListenersCount() {
-        txtFollowers.setOnClickListener(v -> abrirLista("followers"));
-        txtFollowing.setOnClickListener(v -> abrirLista("following"));
+        if (txtFollowers != null) txtFollowers.setOnClickListener(v -> abrirLista("followers"));
+        if (txtFollowing != null) txtFollowing.setOnClickListener(v -> abrirLista("following"));
     }
 
     private void abrirLista(String type) {
         Intent intent = new Intent(this, UserListActivity.class);
         intent.putExtra("userId", targetUserId);
         intent.putExtra("type", type);
-
         startActivity(intent);
     }
 }

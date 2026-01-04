@@ -21,12 +21,14 @@ import com.google.firebase.firestore.ListenerRegistration;
 
 public class HomeFragment extends Fragment {
 
+    // Componentes de UI
     private FloatingActionButton fabCreatePost;
     private ImageButton btnNotifications;
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
-    private View notificationBadge;
+    private View notificationBadge; // Mapeia para o MaterialCardView no XML
 
+    // Firebase e Serviços
     private ListenerRegistration badgeListener;
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
@@ -37,29 +39,34 @@ public class HomeFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // Certifica-te que o nome do XML é 'fragment_home.xml'
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
+        // 1. Inicializar Firebase e Serviços
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
         userService = new UserService();
         notificationService = new NotificationService(userService);
 
-        // 1. Inicializar componentes
+        // 2. Inicializar componentes (IDs correspondem ao novo XML)
         fabCreatePost = view.findViewById(R.id.fabCreatePost);
         btnNotifications = view.findViewById(R.id.btnNotifications);
         tabLayout = view.findViewById(R.id.tabLayoutFeed);
         viewPager = view.findViewById(R.id.viewPagerFeed);
+
+        // O badge agora é um MaterialCardView no XML, mas podemos tratá-lo como View genérica
+        // pois só queremos mudar a visibilidade (VISIBLE/GONE)
         notificationBadge = view.findViewById(R.id.notificationBadge);
 
-        // 2. Configurar o ViewPager2
-        // UsamosgetChildFragmentManager() para fragmentos dentro de fragmentos
+        // 3. Configurar o ViewPager2
+        // 'this' passa o Fragment atual como gestor do ciclo de vida
         pagerAdapter = new FeedPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
 
-        // Evita que os fragmentos sejam recriados ao deslizar (melhora performance)
+        // Mantém 1 página em memória de cada lado para melhorar a performance do scroll
         viewPager.setOffscreenPageLimit(1);
 
-        // 3. Configurar TabLayout com títulos
+        // 4. Configurar TabLayout com o ViewPager
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
             if (position == 0) {
                 tab.setText("Global");
@@ -68,20 +75,26 @@ public class HomeFragment extends Fragment {
             }
         }).attach();
 
-        // 4. Listeners
+        // 5. Configurar Listeners de Clique
         fabCreatePost.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), CreatePostActivity.class);
-            int currentTab = viewPager.getCurrentItem();
-            intent.putExtra("selectedTab", currentTab);
-            startActivity(intent);
+            // Verificação de segurança para evitar crash se a activity não existir
+            if (getActivity() != null) {
+                Intent intent = new Intent(getActivity(), CreatePostActivity.class);
+                // Passamos a tab atual para o post ser criado no contexto certo (Global vs Uni)
+                int currentTab = viewPager.getCurrentItem();
+                intent.putExtra("selectedTab", currentTab);
+                startActivity(intent);
+            }
         });
 
         btnNotifications.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), NotificationsActivity.class);
-            startActivity(intent);
+            if (getActivity() != null) {
+                Intent intent = new Intent(getActivity(), NotificationsActivity.class);
+                startActivity(intent);
+            }
         });
 
-        // 5. Iniciar escuta de notificações
+        // 6. Iniciar escuta de notificações (Badge Vermelho)
         startUnreadListener();
 
         return view;
@@ -90,41 +103,44 @@ public class HomeFragment extends Fragment {
     private void startUnreadListener() {
         if (mAuth.getCurrentUser() == null) return;
 
+        // Remove listener anterior para evitar duplicados
         if (badgeListener != null) {
             badgeListener.remove();
         }
 
-        badgeListener =
-                notificationService.listenForUnreadNotifications(
-                        mAuth.getCurrentUser().getUid(),
-                        new DataListener<Boolean>() {
-                            @Override
-                            public void onData(Boolean hasUnread) {
-                                if (notificationBadge == null) return;
-                                notificationBadge.setVisibility(
-                                        hasUnread ? View.VISIBLE : View.GONE
-                                );
-                            }
+        // Escuta em tempo real alterações na coleção de notificações
+        badgeListener = notificationService.listenForUnreadNotifications(
+                mAuth.getCurrentUser().getUid(),
+                new DataListener<Boolean>() {
+                    @Override
+                    public void onData(Boolean hasUnread) {
+                        if (notificationBadge == null) return;
 
-                            @Override
-                            public void onError(Exception e) {
-                                // optional: log / analytics
-                            }
-                        }
-                );
+                        // Mostra ou esconde o CardView vermelho
+                        notificationBadge.setVisibility(
+                                hasUnread ? View.VISIBLE : View.GONE
+                        );
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        // Opcional: Logar erro
+                    }
+                }
+        );
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Garante que a badge atualiza ao voltar para a home
+        // Garante que a badge atualiza ao voltar para a home (ex: depois de ler notificações)
         startUnreadListener();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Limpeza crucial de listeners do Firebase
+        // Remove o listener para poupar bateria e dados quando o fragmento é destruído
         if (badgeListener != null) {
             badgeListener.remove();
             badgeListener = null;

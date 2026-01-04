@@ -5,6 +5,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -31,6 +34,10 @@ public class FeedTabFragment extends Fragment {
     private List<Post> postList;
     private SwipeRefreshLayout swipeRefreshLayout;
     private LinearLayoutManager layoutManager;
+
+    // NOVO: Referências para o Empty State
+    private LinearLayout emptyView;
+    private Button btnRefreshEmpty;
 
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
@@ -72,10 +79,15 @@ public class FeedTabFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // Certifica-te que o nome do layout XML corresponde ao que criámos com o Empty State
         View view = inflater.inflate(R.layout.activity_feed_tab_fragment, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerViewPosts);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+
+        // NOVO: Inicializar o Empty View
+        emptyView = view.findViewById(R.id.emptyView);
+        btnRefreshEmpty = view.findViewById(R.id.btnRefreshEmpty);
 
         layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
@@ -84,16 +96,36 @@ public class FeedTabFragment extends Fragment {
         postAdapter = new PostAdapter(postList);
         recyclerView.setAdapter(postAdapter);
 
-        // CORREÇÃO: O refresh agora limpa a lista para garantir uma recarga limpa
         swipeRefreshLayout.setOnRefreshListener(() -> {
             postList.clear();
             postAdapter.notifyDataSetChanged();
             iniciarEscutaRealtime();
         });
 
+        // NOVO: Botão de atualizar dentro do ecrã vazio
+        if (btnRefreshEmpty != null) {
+            btnRefreshEmpty.setOnClickListener(v -> {
+                swipeRefreshLayout.setRefreshing(true);
+                postList.clear();
+                postAdapter.notifyDataSetChanged();
+                iniciarEscutaRealtime();
+            });
+        }
+
         iniciarEscutaRealtime();
 
         return view;
+    }
+
+    // NOVO: Método para alternar entre Lista e Estado Vazio
+    private void verificarListaVazia() {
+        if (postList.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+            if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            if (emptyView != null) emptyView.setVisibility(View.GONE);
+        }
     }
 
     private void iniciarEscutaRealtime() {
@@ -132,8 +164,11 @@ public class FeedTabFragment extends Fragment {
 
         postListener = query.addSnapshotListener((value, error) -> {
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+
             if (error != null) {
                 Log.e("Firestore", "Erro: " + error.getMessage());
+                // Se der erro, assumimos que está vazio ou mostramos msg de erro
+                verificarListaVazia();
                 return;
             }
 
@@ -148,6 +183,8 @@ public class FeedTabFragment extends Fragment {
                         }
                     }
                     postAdapter.notifyDataSetChanged();
+                    // NOVO: Verificar se ficou vazio após carga inicial
+                    verificarListaVazia();
                 } else {
                     // Atualizações em tempo real
                     for (DocumentChange dc : value.getDocumentChanges()) {
@@ -166,7 +203,6 @@ public class FeedTabFragment extends Fragment {
                                     postList.add(newIndex, post);
                                     postAdapter.notifyItemInserted(newIndex);
 
-                                    // AUTO-SCROLL: Se o post é novo e o user está no topo, puxa para cima
                                     if (newIndex == 0 && layoutManager.findFirstVisibleItemPosition() <= 1) {
                                         recyclerView.scrollToPosition(0);
                                     }
@@ -182,20 +218,19 @@ public class FeedTabFragment extends Fragment {
 
                             case REMOVED:
                                 if (oldIndex != -1 && oldIndex < postList.size()) {
-                                    // 1. Removemos o objeto da nossa lista local
                                     postList.remove(oldIndex);
-
-                                    // 2. Notificamos a remoção para a animação suave
                                     postAdapter.notifyItemRemoved(oldIndex);
-
-                                    // 3. ESSENCIAL: Notificamos que os itens abaixo mudaram de posição
-                                    // Isso evita que o RecyclerView tente aceder a índices errados (o bug)
                                     postAdapter.notifyItemRangeChanged(oldIndex, postList.size());
                                 }
                                 break;
                         }
                     }
+                    // NOVO: Verificar estado vazio após qualquer alteração (Add/Remove)
+                    verificarListaVazia();
                 }
+            } else {
+                // Se value for null, está vazio
+                verificarListaVazia();
             }
         });
     }

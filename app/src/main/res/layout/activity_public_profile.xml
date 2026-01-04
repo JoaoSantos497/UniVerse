@@ -1,264 +1,370 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
     android:fitsSystemWindows="true">
 
-    <LinearLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/profileContentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:visibility="visible">
 
-        <LinearLayout
+        <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:paddingTop="30dp"
-            android:paddingBottom="16dp"
-            android:background="?android:attr/colorBackground"
-            android:elevation="4dp">
+            android:background="@android:color/transparent"
+            app:elevation="0dp">
 
-            <RelativeLayout
+            <com.google.android.material.appbar.CollapsingToolbarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp">
+                app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
 
-                <ImageButton
-                    android:id="@+id/btnBackPublic"
-                    android:layout_width="wrap_content"
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/ic_arrow_back"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    app:tint="?android:attr/textColorPrimary"
-                    android:contentDescription="Voltar"/>
+                    android:paddingBottom="16dp">
 
-                <ImageButton
-                    android:id="@+id/btnProfileOptions"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/ic_more_vert"
-                    android:layout_alignParentEnd="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    app:tint="?android:attr/textColorPrimary"
-                    android:contentDescription="Opções"/>
-            </RelativeLayout>
+                    <View
+                        android:id="@+id/headerBg"
+                        android:layout_width="match_parent"
+                        android:layout_height="140dp"
+                        android:background="?attr/colorPrimary"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-            <ImageView
-                android:id="@+id/publicProfileImage"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:src="@drawable/ic_person_filled"
-                android:background="@drawable/ic_person_filled"
-                android:scaleType="centerCrop"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="16dp"/>
+                    <ImageButton
+                        android:id="@+id/btnBackPublic"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_search_outline"
+                        android:backgroundTint="#20000000"
+                        android:src="@drawable/ic_arrow_back"
+                        app:tint="#FFFFFF"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:contentDescription="Voltar"/>
+
+                    <ImageButton
+                        android:id="@+id/btnProfileOptions"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_search_outline"
+                        android:backgroundTint="#20000000"
+                        android:src="@drawable/ic_more_vert"
+                        app:tint="#FFFFFF"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        android:contentDescription="Opções"/>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/infoCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginTop="80dp"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="4dp"
+                        app:cardBackgroundColor="?android:attr/colorBackground"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingTop="60dp"
+                            android:paddingBottom="24dp"
+                            android:paddingHorizontal="16dp"
+                            android:gravity="center_horizontal">
+
+                            <TextView
+                                android:id="@+id/publicProfileName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Carregando..."
+                                android:textSize="22sp"
+                                android:textStyle="bold"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textAlignment="center"/>
+
+                            <TextView
+                                android:id="@+id/publicProfileCourse"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="..."
+                                android:textSize="14sp"
+                                android:textColor="?android:attr/textColorSecondary"
+                                android:textAlignment="center"
+                                android:layout_marginTop="4dp"/>
+
+                            <TextView
+                                android:id="@+id/publicProfileUni"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Universidade..."
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorPrimary"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="20dp"/>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center"
+                                android:layout_marginBottom="24dp">
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:gravity="center"
+                                    android:layout_marginEnd="40dp">
+                                    <TextView
+                                        android:id="@+id/publicFollowersCount"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0"
+                                        android:textStyle="bold"
+                                        android:textSize="20sp"
+                                        android:textColor="?android:attr/textColorPrimary"/>
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Seguidores"
+                                        android:textColor="?android:attr/textColorSecondary"
+                                        android:textSize="12sp"
+                                        android:textAllCaps="true"/>
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="1dp"
+                                    android:layout_height="30dp"
+                                    android:background="?android:attr/listDivider"
+                                    android:layout_marginEnd="40dp"/>
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:gravity="center">
+                                    <TextView
+                                        android:id="@+id/publicFollowingCount"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="0"
+                                        android:textStyle="bold"
+                                        android:textSize="20sp"
+                                        android:textColor="?android:attr/textColorPrimary"/>
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="A Seguir"
+                                        android:textColor="?android:attr/textColorSecondary"
+                                        android:textSize="12sp"
+                                        android:textAllCaps="true"/>
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/btnFollowProfile"
+                                    android:layout_width="0dp"
+                                    android:layout_height="50dp"
+                                    android:layout_weight="1"
+                                    android:text="Seguir"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold"
+                                    android:backgroundTint="?attr/colorPrimary"
+                                    android:textColor="?attr/colorOnPrimary"
+                                    app:cornerRadius="25dp"
+                                    android:layout_marginEnd="12dp"/>
+
+                                <Button
+                                    android:id="@+id/btnMessageProfile"
+                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="50dp"
+                                    android:layout_weight="1"
+                                    android:text="Mensagem"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold"
+                                    android:textColor="?attr/colorPrimary"
+                                    app:strokeColor="?attr/colorPrimary"
+                                    app:cornerRadius="25dp"/>
+                            </LinearLayout>
+
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/publicProfileImage"
+                        android:layout_width="110dp"
+                        android:layout_height="110dp"
+                        android:src="@drawable/ic_person_filled"
+                        android:background="#E0E0E0"
+                        android:scaleType="centerCrop"
+                        android:padding="4dp"
+                        app:strokeWidth="4dp"
+                        app:strokeColor="?android:attr/colorBackground"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.MaterialComponents.MediumComponent"
+                        app:cornerSize="50%"
+                        android:elevation="6dp"
+                        app:layout_constraintBottom_toTopOf="@id/infoCard"
+                        app:layout_constraintTop_toTopOf="@id/infoCard"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"/>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </com.google.android.material.appbar.CollapsingToolbarLayout>
 
             <TextView
-                android:id="@+id/publicProfileName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Carregando..."
-                android:textSize="22sp"
+                android:text="Publicações"
+                android:paddingHorizontal="24dp"
+                android:paddingVertical="12dp"
                 android:textStyle="bold"
-                android:textColor="?android:attr/textColorPrimary"
-                android:layout_gravity="center_horizontal"/>
+                android:textSize="18sp"
+                android:textColor="?android:attr/textColorPrimary"/>
 
-            <TextView
-                android:id="@+id/publicProfileCourse"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="..."
-                android:textSize="14sp"
-                android:textColor="?android:attr/textColorSecondary"
-                android:layout_marginBottom="4dp"
-                android:layout_gravity="center_horizontal"/>
+        </com.google.android.material.appbar.AppBarLayout>
 
-            <TextView
-                android:id="@+id/publicProfileUni"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Universidade..."
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorPrimary"
-                android:layout_marginBottom="20dp"
-                android:layout_gravity="center_horizontal"/>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerPublicPosts"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="80dp"/>
 
             <LinearLayout
+                android:id="@+id/emptyViewPublic"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_marginTop="60dp"
+                android:orientation="vertical"
                 android:gravity="center"
-                android:layout_marginBottom="20dp">
+                android:visibility="gone">
 
-                <LinearLayout
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_search"
+                    android:padding="16dp"
+                    android:background="@drawable/bg_search_outline"
+                    android:backgroundTint="#10000000"
+                    app:tint="?attr/colorPrimary"/>
+
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:layout_marginEnd="40dp">
-                    <TextView
-                        android:id="@+id/publicFollowersCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textStyle="bold"
-                        android:textSize="18sp"
-                        android:textColor="?android:attr/textColorPrimary"/>
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Seguidores"
-                        android:textColor="?android:attr/textColorPrimary"
-                        android:textSize="12sp"/>
-                </LinearLayout>
+                    android:text="Ainda sem publicações"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:layout_marginTop="16dp"/>
 
-                <LinearLayout
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <TextView
-                        android:id="@+id/publicFollowingCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textStyle="bold"
-                        android:textSize="18sp"
-                        android:textColor="?android:attr/textColorPrimary"/>
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="A Seguir"
-                        android:textColor="?android:attr/textColorPrimary"
-                        android:textSize="12sp"/>
-                </LinearLayout>
+                    android:text="Este utilizador ainda não publicou nada."
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
+        </FrameLayout>
 
-            <LinearLayout
-                style="?android:attr/buttonBarStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="2">
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-                <Button
-                    android:id="@+id/btnFollowProfile"
-                    style="?android:attr/buttonBarButtonStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Seguir"
-                    android:backgroundTint="?attr/colorPrimary"
-                    android:textColor="?attr/colorOnPrimary"
-                    android:layout_marginEnd="8dp"/>
-
-                <Button
-                    android:id="@+id/btnMessageProfile"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Mensagem"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:textColor="?attr/colorPrimary"
-                    app:strokeColor="?attr/colorPrimary"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?android:attr/listDivider"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Publicações"
-            android:padding="16dp"
-            android:textStyle="bold"
-            android:textColor="?android:attr/textColorPrimary"/>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerPublicPosts"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipToPadding="false"
-            android:paddingBottom="16dp"/>
-
-        <LinearLayout
-            android:id="@+id/emptyViewPublic"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:visibility="gone">
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:src="@drawable/ic_search"
-                android:alpha="0.3"
-                app:tint="?android:attr/textColorSecondary"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Sem publicações ainda."
-                android:textColor="?android:attr/textColorSecondary"
-                android:layout_marginTop="8dp"/>
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutBlocked"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone"
+        android:background="?android:attr/colorBackground"
         android:clickable="true"
         android:focusable="true"
-        android:background="?android:attr/colorBackground">
+        android:elevation="10dp"
+        android:visibility="gone"
+        tools:visibility="gone">
 
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_blocked"
-            app:tint="?android:attr/textColorSecondary"
-            android:alpha="0.5"/>
-
-        <TextView
+        <ImageButton
+            android:id="@+id/btnBackBlockedOverlay"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Utilizador Bloqueado"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"
-            android:textColor="?android:attr/textColorPrimary"/>
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="?android:attr/textColorPrimary"
+            android:padding="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Você bloqueou esta pessoa."
-            android:textSize="14sp"
-            android:layout_marginTop="8dp"
-            android:textColor="?android:attr/textColorSecondary"/>
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <Button
-            android:id="@+id/btnUnblock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Desbloquear"
-            android:layout_marginTop="24dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:textColor="?attr/colorPrimary"
-            app:strokeColor="?attr/colorPrimary"/>
-    </LinearLayout>
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:src="@drawable/ic_blocked"
+                app:tint="?android:attr/textColorSecondary"
+                android:alpha="0.2"
+                android:layout_marginBottom="24dp"/>
 
-</RelativeLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Utilizador Bloqueado"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Você bloqueou esta pessoa. Não poderá ver as publicações nem enviar mensagens."
+                android:textSize="15sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"/>
+
+            <Button
+                android:id="@+id/btnUnblock"
+                android:layout_width="wrap_content"
+                android:layout_height="50dp"
+                android:text="Desbloquear"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:textColor="?attr/colorPrimary"
+                app:strokeColor="?attr/colorPrimary"
+                app:cornerRadius="25dp"
+                android:paddingHorizontal="32dp"/>
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

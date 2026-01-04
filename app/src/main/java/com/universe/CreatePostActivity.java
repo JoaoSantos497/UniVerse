@@ -32,7 +32,11 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private EditText inputPostContent;
     private Button btnPublish;
-    private ImageButton btnSelectPhoto;
+
+    // CORREÇÃO 1: Mudou de ImageButton para ImageView (ou View genérico)
+    // porque no novo XML, o id "btnAddImage" é um ImageView.
+    private View btnSelectPhoto;
+
     private ImageView imagePreview;
     private ImageButton btnRemoveImage;
     private TextView currentUserName;
@@ -43,7 +47,6 @@ public class CreatePostActivity extends AppCompatActivity {
     private FirebaseStorage storage;
 
     private UserService userService;
-
     private NotificationService notificationService;
 
     private Uri selectedImageUri = null;
@@ -63,7 +66,6 @@ public class CreatePostActivity extends AppCompatActivity {
         userService = new UserService();
         notificationService = new NotificationService(userService);
 
-
         ligarComponentes();
 
         // --- VERIFICAÇÃO DE MODO ---
@@ -73,7 +75,7 @@ public class CreatePostActivity extends AppCompatActivity {
         if (editPostId != null) {
             inputPostContent.setText(contentParaEditar);
             btnPublish.setText("Atualizar");
-            // Na edição, escondemos o botão de foto para não complicar a lógica de substituição no Storage
+            // Na edição, escondemos o botão de foto
             btnSelectPhoto.setVisibility(View.GONE);
         }
 
@@ -81,13 +83,21 @@ public class CreatePostActivity extends AppCompatActivity {
         carregarDadosUtilizador();
 
         btnPublish.setOnClickListener(v -> prepararPublicacao());
-        findViewById(R.id.btnCloseCreatePost).setOnClickListener(v -> finish());
+
+        // CORREÇÃO 2: Verificação de null para evitar crash se o botão não for encontrado
+        View btnClose = findViewById(R.id.btnCloseCreatePost);
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> finish());
+        }
     }
 
     private void ligarComponentes() {
         inputPostContent = findViewById(R.id.inputPostContent);
         btnPublish = findViewById(R.id.btnPublish);
+
+        // Aqui estava o erro: findViewById devolvia um ImageView, mas tentavas guardar num ImageButton
         btnSelectPhoto = findViewById(R.id.btnAddImage);
+
         currentUserName = findViewById(R.id.currentUserName);
         currentUserImage = findViewById(R.id.currentUserImage);
         imagePreview = findViewById(R.id.imagePreview);
@@ -99,17 +109,25 @@ public class CreatePostActivity extends AppCompatActivity {
             if (uri != null) {
                 selectedImageUri = uri;
                 imagePreview.setImageURI(uri);
+                // No novo layout, o preview está dentro de um CardView, mas controlar o ImageView funciona
+                // Se o CardView estiver visível por defeito (mas vazio), isto preenche-o.
+                // Se quiseres esconder o CardView pai, terias de buscar o ID do pai.
                 imagePreview.setVisibility(View.VISIBLE);
                 btnRemoveImage.setVisibility(View.VISIBLE);
             }
         });
 
-        btnSelectPhoto.setOnClickListener(v -> mGetContent.launch("image/*"));
-        btnRemoveImage.setOnClickListener(v -> {
-            selectedImageUri = null;
-            imagePreview.setVisibility(View.GONE);
-            btnRemoveImage.setVisibility(View.GONE);
-        });
+        if (btnSelectPhoto != null) {
+            btnSelectPhoto.setOnClickListener(v -> mGetContent.launch("image/*"));
+        }
+
+        if (btnRemoveImage != null) {
+            btnRemoveImage.setOnClickListener(v -> {
+                selectedImageUri = null;
+                imagePreview.setVisibility(View.GONE);
+                btnRemoveImage.setVisibility(View.GONE);
+            });
+        }
     }
 
     private void carregarDadosUtilizador() {
@@ -135,10 +153,8 @@ public class CreatePostActivity extends AppCompatActivity {
         btnPublish.setText("A processar...");
 
         if (editPostId != null) {
-            // Se estamos a editar, apenas atualizamos o conteúdo de texto do documento original
             atualizarPostNoFirestore(content);
         } else {
-            // Se é novo, verificamos se tem imagem
             if (selectedImageUri != null) {
                 fazerUploadImagem(content);
             } else {
@@ -161,6 +177,8 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void fazerUploadImagem(String content) {
+        if (mAuth.getCurrentUser() == null) return;
+
         String fileName = "post_images/" + mAuth.getCurrentUser().getUid() + "/" + UUID.randomUUID().toString() + ".jpg";
         StorageReference ref = storage.getReference().child(fileName);
 
@@ -175,9 +193,12 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void criarNovoPost(String content, String imageUrl) {
+        if (mAuth.getCurrentUser() == null) return;
+
         String uid = mAuth.getCurrentUser().getUid();
         String email = mAuth.getCurrentUser().getEmail();
-        String domain = (email != null && email.contains("@")) ?email.substring(email.indexOf("@") + 1).toLowerCase() : "geral";
+        String domain = (email != null && email.contains("@")) ? email.substring(email.indexOf("@") + 1).toLowerCase() : "geral";
+
         int selectedTab = getIntent().getIntExtra("selectedTab", 0);
         String postType = (selectedTab == 1) ? "uni" : "global";
 
@@ -185,24 +206,24 @@ public class CreatePostActivity extends AppCompatActivity {
             String nome = doc.getString("nome");
             String dataHora = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
 
-            // 1. Geramos um ID manualmente ANTES de enviar.
-            // Isso garante que o postId já vai preenchido e o SnapshotListener o deteta logo.
             String newPostId = db.collection("posts").document().getId();
 
             Post post = new Post(uid, nome, content, dataHora, System.currentTimeMillis(), imageUrl, domain, postType);
-            post.setPostId(newPostId); // Define o ID no objeto
+            post.setPostId(newPostId);
 
-            // 2. Usamos .document(newPostId).set() em vez de .add()
             db.collection("posts").document(newPostId).set(post)
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "Publicado!", Toast.LENGTH_SHORT).show();
-                        db.collection("users").document(mAuth.getCurrentUser().getUid()).collection("followers").get().addOnSuccessListener(querySnapshot -> {
-                            for (com.google.firebase.firestore.DocumentSnapshot document : querySnapshot.getDocuments()) {
-                                notificationService.sendNotification(document.getId(), POST);
-                            }
-                        });
 
-                        finish(); // Ao fechar, o FeedTabFragment já terá o post novo via SnapshotListener
+                        // Notificar seguidores
+                        db.collection("users").document(uid).collection("followers").get()
+                                .addOnSuccessListener(querySnapshot -> {
+                                    for (com.google.firebase.firestore.DocumentSnapshot document : querySnapshot.getDocuments()) {
+                                        notificationService.sendNotification(document.getId(), POST);
+                                    }
+                                });
+
+                        finish();
                     })
                     .addOnFailureListener(e -> {
                         btnPublish.setEnabled(true);
@@ -210,5 +231,4 @@ public class CreatePostActivity extends AppCompatActivity {
                     });
         });
     }
-
 }
