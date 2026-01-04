@@ -1,100 +1,184 @@
 package com.universe;
 
+import static com.google.firebase.firestore.Query.Direction.DESCENDING;
+import static com.universe.NotificationType.FOLLOW;
+
+import android.content.res.Resources.NotFoundException;
+
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.WriteBatch;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class NotificationService {
-    private FirebaseFirestore db;
-    private String myUid;
-    private String myName; // <--- NOVA VARIÁVEL: Guarda o nome para usar no Follow
 
-    public NotificationService() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            this.myUid = user.getUid();
-            // Tenta pegar o nome diretamente do Auth (sem ir ao banco de dados, é instantâneo)
-            this.myName = user.getDisplayName();
-        }
+    private static String TARGET_USER_ID = "targetUserId";
+    private static String TIMESTAMP = "timestamp";
+    private static String READ = "read";
+
+    private final UserService userService;
+    private final FirebaseFirestore db;
+    private final String myUid;
+
+    public NotificationService(UserService userService) {
+        this.userService = userService;
         this.db = FirebaseFirestore.getInstance();
+        this.myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
     }
 
-    // --- 1. SEGUIR (BATCH) ---
-    // Agora este método já vai ter acesso ao 'myName' através do método 'notification()'
-    public WriteBatch sendNotification(WriteBatch batch, String tUid, NotificationType type) {
-        if (tUid.equals(myUid)) return batch;
+    public ListenerRegistration listenToNotifications(
+            String targetUserId,
+            DataListener<List<Notification>> listener
+    ) {
+        return notificationCollectionRef()
+                .whereEqualTo(TARGET_USER_ID, targetUserId)
+                .orderBy(TIMESTAMP, DESCENDING)
+                .addSnapshotListener((snapshots, error) -> {
 
-        DocumentReference notifRef = db.collection("notifications").document();
-        Map<String, Object> notif = notification(tUid, type); // O segredo está aqui dentro agora
+                    if (error != null) {
+                        listener.onError(error);
+                        return;
+                    }
 
-        batch.set(notifRef, notif);
+                    if (snapshots == null) {
+                        listener.onData(new ArrayList<>());
+                        return;
+                    }
 
-        return batch;
+                    List<Notification> result = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        Notification n = doc.toObject(Notification.class);
+                        if (n != null) {
+                            n.setNotificationId(doc.getId());
+                            result.add(n);
+                        }
+                    }
+
+                    listener.onData(result);
+                });
     }
 
-    // --- 2. NOTIFICAÇÃO SIMPLES (Geral) ---
-    public void sendNotification(String targetId, NotificationType type) {
-        if (targetId.equals(myUid)) return;
+    public ListenerRegistration listenForUnreadNotifications(
+            String targetUserId,
+            DataListener<Boolean> listener
+    ) {
+        return notificationCollectionRef()
+                .whereEqualTo(TARGET_USER_ID, targetUserId)
+                .whereEqualTo(READ, false)
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        listener.onError(error);
+                        return;
+                    }
 
-        // Aqui mantemos a busca ao banco para garantir (caso o Auth falhe)
-        db.collection("users").document(myUid).get().addOnSuccessListener(doc -> {
-            if (doc.exists()) {
-                Map<String, Object> n = notification(targetId, type);
+                    boolean hasUnread = snapshots != null && !snapshots.isEmpty();
 
-                // Se o método 'notification' falhou em pegar o nome do Auth, tentamos do Firestore
-                if (!n.containsKey("fromUserName")) {
-                    // Verifica as tuas chaves: "nome", "name", "username"
-                    if (doc.contains("nome")) n.put("fromUserName", doc.getString("nome"));
-                    else if (doc.contains("userName")) n.put("fromUserName", doc.getString("userName"));
-                }
-
-                db.collection("notifications").add(n);
-            }
-        });
+                    listener.onData(hasUnread);
+                });
     }
 
-    // --- 3. LIKES E COMENTÁRIOS (Com objeto User) ---
-    public void sendNotification(User user, String targetId, String postId, NotificationType type) {
-        if (targetId.equals(myUid)) return;
-
-        Map<String, Object> n = notification(targetId, type);
-
-        // Adicionamos o nome explicitamente vindo do objeto User
-        if (user.getNome() != null && !user.getNome().isEmpty()) {
-            n.put("fromUserName", user.getNome());
+    public Task<Void> markAsRead(List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) {
+            return Tasks.forResult(null);
         }
 
-        if (user.getPhotoUrl() != null) {
-            n.put("fromUserPhoto", user.getPhotoUrl());
-        }
+        WriteBatch batch = db.batch();
 
-        // Passa o postId (e garante que não é null)
-        n.put("postId", postId != null ? postId : "");
+        notifications.stream()
+                .filter(n -> !n.isRead())
+                .map(Notification::getNotificationId)
+                .filter(Objects::nonNull)
+                .map(id -> notificationCollectionRef().document(id))
+                .forEach(ref -> batch.update(ref, READ, true));
 
-        db.collection("notifications").add(n);
+        return batch.commit();
     }
 
-    // --- Metodo auxiliar ---
-    private Map<String, Object> notification (String tUid, NotificationType type) {
-        Map<String, Object> notif = new HashMap<>();
-        notif.put("targetUserId", tUid);
-        notif.put("fromUserId", myUid);
-        notif.put("message", type.getMessage());
-        notif.put("type", type.getType());
-        notif.put("timestamp", FieldValue.serverTimestamp());
-        notif.put("read", false);
+    public Task<Void> addFollowNotificationToBatch(WriteBatch batch, String targetUserId) {
+        return createNotificationInternal(targetUserId, FOLLOW, null)
+                .onSuccessTask(notification -> {
+                    DocumentReference ref = notificationRef();
+                    batch.set(ref, notification);
+                    return Tasks.forResult(null);
+                });
+    }
 
-        // --- Passar o nome do Follow ---
-        if (myName != null && !myName.isEmpty()) {
-            notif.put("fromUserName", myName);
+    public Task<Notification> sendNotification(
+            String targetUserId,
+            NotificationType type
+    ) {
+        return sendNotificationInternal(targetUserId, type, null);
+    }
+
+    public Task<Notification> sendNotification(
+            String targetUserId,
+            NotificationType type,
+            String postId
+    ) {
+        return sendNotificationInternal(targetUserId, type, postId);
+    }
+
+    private Task<Notification> sendNotificationInternal(
+            String targetUserId,
+            NotificationType type,
+            String postId
+    ) {
+        return createNotificationInternal(targetUserId, type, postId)
+                .onSuccessTask(notification ->
+                        notificationCollectionRef()
+                                .add(notification)
+                                .onSuccessTask(ref -> {
+                                    notification.setNotificationId(ref.getId());
+                                    return Tasks.forResult(notification);
+                                })
+                );
+    }
+
+    private DocumentReference notificationRef() {
+        return notificationCollectionRef().document();
+    }
+
+    private CollectionReference notificationCollectionRef() {
+        return db.collection("notifications");
+    }
+
+    private Task<Notification> createNotificationInternal(
+            String targetUserId,
+            NotificationType type,
+            String postId
+    ) {
+        if (targetUserId.equals(myUid)) {
+            return Tasks.forException(
+                    new IllegalStateException("User cannot notify themselves")
+            );
         }
 
-        return notif;
+        return userService.getUser(myUid)
+                .onSuccessTask(userOpt ->
+                        userOpt.map(user ->
+                                Tasks.forResult(
+                                        new Notification(
+                                                user.getUid(),
+                                                user.getNome(),
+                                                user.getPhotoUrl(),
+                                                targetUserId,
+                                                type,
+                                                postId
+                                        )
+                                )
+                        ).orElseGet(() ->
+                                Tasks.forException(new NotFoundException())
+                        )
+                );
     }
 }

@@ -32,9 +32,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class CommentsActivity extends AppCompatActivity {
@@ -65,7 +63,7 @@ public class CommentsActivity extends AppCompatActivity {
 
     private NotificationService notificationService;
 
-
+    private UserService userService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +81,8 @@ public class CommentsActivity extends AppCompatActivity {
         storage = FirebaseStorage.getInstance();
 
         ligarComponentes();
-        notificationService = new NotificationService();
+        userService = new UserService();
+        notificationService = new NotificationService(userService);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentList = new ArrayList<>();
         adapter = new CommentsAdapter(commentList, username -> ativarModoResposta(username));
@@ -315,12 +314,6 @@ public class CommentsActivity extends AppCompatActivity {
 
     private void enviarNotificacaoComment(String donoDoPostId) {
         if (donoDoPostId == null || donoDoPostId.equals(mAuth.getCurrentUser().getUid())) return;
-
-        db.collection("users").document(mAuth.getCurrentUser().getUid()).get().addOnSuccessListener(doc -> {
-            User eu = doc.toObject(User.class);
-            if (eu != null) {
-                notificationService.sendNotification(eu, donoDoPostId, postId, COMMENT);
-            }
-        });
+        notificationService.sendNotification(donoDoPostId, COMMENT, postId);
     }
 }

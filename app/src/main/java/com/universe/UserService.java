@@ -1,13 +1,20 @@
 package com.universe;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
+
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class UserService {
     private FirebaseFirestore db;
@@ -60,5 +67,36 @@ public class UserService {
         batch.update(refTarget, "followersCount", FieldValue.increment(-1));
 
         return batch;
+    }
+
+    public Task<Optional<User>> getUser(String userId) {
+        return db.collection("users")
+                .document(userId)
+                .get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        throw requireNonNull(task.getException());
+                    }
+
+                    DocumentSnapshot doc = task.getResult();
+                    if (doc != null && doc.exists()) {
+                        return ofNullable(doc.toObject(User.class));
+                    }
+                    return empty();
+                });
+    }
+
+    public  Task<Boolean> getFollowing(String targetUid) {
+        return db.collection("users")
+                .document(myUid)
+                .collection("following")
+                .document(targetUid).get()
+                .continueWith(task -> {
+                    if (!task.isSuccessful()) {
+                        throw requireNonNull(task.getException());
+                    }
+                    DocumentSnapshot doc = task.getResult();
+                    return doc != null && doc.exists();
+                });
     }
 }

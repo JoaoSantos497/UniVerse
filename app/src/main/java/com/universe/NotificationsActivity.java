@@ -1,20 +1,20 @@
 package com.universe;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
+
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +34,10 @@ public class NotificationsActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private String currentUserId;
 
+    private UserService userService;
+    private NotificationService notificationService;
+    private ListenerRegistration notificationListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +55,8 @@ public class NotificationsActivity extends AppCompatActivity {
             finish();
             return;
         }
+        userService = new UserService();
+        notificationService = new NotificationService(userService);
 
         // --- ATUALIZAÇÃO 2: Usar os IDs corretos do activity_notifications.xml ---
         recyclerView = findViewById(R.id.recyclerNotifications);
@@ -69,45 +75,42 @@ public class NotificationsActivity extends AppCompatActivity {
     }
 
     private void carregarNotificacoes() {
-        db.collection("notifications")
-                .whereEqualTo("targetUserId", currentUserId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        // Toast.makeText(this, "Erro ao carregar.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+        notificationListener =
+                notificationService.listenToNotifications(
+                        currentUserId,
+                        new DataListener<>() {
+                            @Override
+                            public void onData(List<Notification> notifications) {
+                                notificationList.clear();
+                                notificationList.addAll(notifications);
+                                adapter.notifyDataSetChanged();
 
-                    if (value != null) {
-                        notificationList.clear();
-                        for (DocumentSnapshot doc : value.getDocuments()) {
-                            Notification n = doc.toObject(Notification.class);
-                            if (n != null) {
-                                n.setNotificationId(doc.getId());
-                                notificationList.add(n);
+                                if (notificationList.isEmpty()) {
+                                    if (emptyView != null) emptyView.setVisibility(VISIBLE);
+                                    recyclerView.setVisibility(GONE);
+                                } else {
+                                    if (emptyView != null) emptyView.setVisibility(GONE);
+                                    recyclerView.setVisibility(VISIBLE);
+                                    marcarComoLidas();
+                                }
+                            }
+                            @Override
+                            public void onError(Exception e) {
+
                             }
                         }
-                        adapter.notifyDataSetChanged();
-
-                        // Gerir estado vazio
-                        if (notificationList.isEmpty()) {
-                            if (emptyView != null) emptyView.setVisibility(View.VISIBLE);
-                            recyclerView.setVisibility(View.GONE);
-                        } else {
-                            if (emptyView != null) emptyView.setVisibility(View.GONE);
-                            recyclerView.setVisibility(View.VISIBLE);
-                            marcarComoLidas();
-                        }
-                    }
-                });
+                );
     }
 
     private void marcarComoLidas() {
-        for (Notification n : notificationList) {
-            if (!n.isRead() && n.getNotificationId() != null) {
-                db.collection("notifications").document(n.getNotificationId())
-                        .update("read", true);
-            }
+        notificationService.markAsRead(notificationList);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (notificationListener != null) {
+            notificationListener.remove();
         }
     }
 }

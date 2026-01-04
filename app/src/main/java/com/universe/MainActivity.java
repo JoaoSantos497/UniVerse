@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkNotificationIntent(Intent intent) {
         if (intent != null && intent.getExtras() != null) {
-            String type = intent.getStringExtra("type");
+            NotificationType type = NotificationType.valueOf(intent.getStringExtra("type"));
             // ATENÇÃO: Tem de ser "fromUserId" para bater certo com o index.js
             String userId = intent.getStringExtra("fromUserId");
             String postId = intent.getStringExtra("postId");
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("NOTIF", "Tipo: " + type + ", User: " + userId + ", Post: " + postId);
 
                 switch (type) {
-                    case "follow":
+                    case FOLLOW:
                         if (userId != null) {
                             // Abre perfil de outra pessoa
                             Intent profileIntent = new Intent(this, PublicProfileActivity.class);
@@ -88,9 +88,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                         break;
 
-                    case "like":
-                    case "comment":
-                    case "new_post":
+                    case LIKE:
+                    case COMMENT:
+                    case POST:
                         if (postId != null && !postId.isEmpty()) {
                             // Abre detalhes do post
                             Intent postIntent = new Intent(this, PostDetailsActivity.class);

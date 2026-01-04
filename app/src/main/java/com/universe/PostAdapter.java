@@ -1,6 +1,5 @@
 package com.universe;
 
-import static com.universe.NotificationType.COMMENT;
 import static com.universe.NotificationType.LIKE;
 
 import android.app.AlertDialog;
@@ -24,9 +23,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
@@ -42,8 +39,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public PostAdapter(List<Post> postList) {
         this.postList = postList;
         this.db = FirebaseFirestore.getInstance();
-        this.notificationService = new NotificationService();
         this.userService = new UserService();
+        this.notificationService = new NotificationService(userService);
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
@@ -87,7 +84,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         db.collection("users").document(post.getUserId()).get().addOnSuccessListener(doc -> {
             if (doc.exists() && context != null) {
                 String url = doc.getString("photoUrl");
-                Glide.with(context).load(url).circleCrop().placeholder(R.drawable.circle_bg).into(holder.imgProfile);
+                Glide.with(context).load(url).circleCrop().placeholder(R.drawable.ic_person_filled).into(holder.imgProfile);
             }
         });
 

@@ -1,5 +1,7 @@
 package com.universe;
 
+import static com.universe.NotificationType.FOLLOW;
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -52,18 +54,19 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         if (n.getFromUserPhoto() != null && !n.getFromUserPhoto().isEmpty()) {
             Glide.with(context).load(n.getFromUserPhoto()).circleCrop().into(holder.imgAvatar);
         } else {
-            holder.imgAvatar.setImageResource(R.drawable.circle_bg);
+            holder.imgAvatar.setImageResource(R.drawable.ic_person_filled);
+            holder.imgAvatar.setImageResource(R.drawable.ic_person_filled_white);
         }
 
         // Clique: Se for like/comment vai para os comentários do post
         holder.itemView.setOnClickListener(v -> {
-            if (n.getPostId() != null && !n.getPostId().isEmpty()) { // Adicionei verificação de isEmpty
+            if (n.getPostIdOptional().isPresent()) { // Adicionei verificação de isEmpty
                 Intent intent = new Intent(context, CommentsActivity.class); // Ou PostDetailsActivity, tu decides
                 intent.putExtra("postId", n.getPostId());
                 context.startActivity(intent);
             }
             // Lógica para Seguir
-            else if ("follow".equals(n.getType())) { // Inverti para evitar NullPointerException se getType for null
+            else if (FOLLOW.equals(n.getType())) { // Inverti para evitar NullPointerException se getType for null
                 Intent intent = new Intent(context, PublicProfileActivity.class);
 
                 // --- CORREÇÃO AQUI ---

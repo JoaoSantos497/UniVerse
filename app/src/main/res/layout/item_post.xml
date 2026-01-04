@@ -1,100 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="20dp"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="?android:attr/colorBackground">
+    app:cardBackgroundColor="?android:attr/colorBackground"
+    app:strokeWidth="0dp">
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="15dp">
+        android:paddingBottom="12dp">
 
-        <ImageButton
-            android:id="@+id/btnMoreOptions"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_more_vert"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:padding="8dp"
-            app:tint="?android:attr/textColorPrimary" />
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/postProfileImage"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:src="@drawable/ic_person_filled"
+            android:background="#E0E0E0"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.MaterialComponents.MediumComponent"
+            app:cornerSize="50%"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:contentDescription="Avatar"/>
 
         <LinearLayout
             android:id="@+id/headerLayout"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_toStartOf="@id/btnMoreOptions"
-            android:layout_marginBottom="12dp"
-            android:gravity="center_vertical">
+            android:orientation="vertical"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintStart_toEndOf="@id/postProfileImage"
+            app:layout_constraintEnd_toStartOf="@id/btnMoreOptions"
+            app:layout_constraintTop_toTopOf="@id/postProfileImage"
+            app:layout_constraintBottom_toBottomOf="@id/postProfileImage">
 
-            <ImageView
-                android:id="@+id/postProfileImage"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/circle_bg"
-                android:background="@drawable/circle_bg"
-                android:scaleType="centerCrop"
-                android:layout_marginEnd="12dp"
-                android:contentDescription="Avatar"/>
-
-            <LinearLayout
+            <TextView
+                android:id="@+id/postUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:text="Nome do Aluno"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:maxLines="1"
+                android:ellipsize="end"/>
 
-                <TextView
-                    android:id="@+id/postUserName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Nome do Aluno"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:textColor="?android:attr/textColorPrimary"/>
-
-                <TextView
-                    android:id="@+id/postDate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="10 min"
-                    android:textSize="12sp"
-                    android:textColor="?android:attr/textColorSecondary"/>
-            </LinearLayout>
+            <TextView
+                android:id="@+id/postDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10 min"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"/>
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnMoreOptions"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="12dp"
+            android:src="@drawable/ic_more_vert"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="?android:attr/textColorSecondary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/postProfileImage"
+            app:layout_constraintBottom_toBottomOf="@id/postProfileImage"
+            android:contentDescription="Opções"/>
 
         <TextView
             android:id="@+id/postContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/headerLayout"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="12dp"
             android:text="Texto do post..."
             android:textSize="15sp"
             android:textColor="?android:attr/textColorPrimary"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="12dp"/>
+            android:lineSpacingMultiplier="1.2"
+            app:layout_constraintTop_toBottomOf="@id/postProfileImage"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-        <ImageView
-            android:id="@+id/postImage"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/imageContainer"
             android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:scaleType="centerCrop"
-            android:layout_below="@id/postContent"
-            android:layout_marginBottom="12dp"
-            android:src="@drawable/bg_search_outline"
-            android:visibility="gone" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginHorizontal="12dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0.5dp"
+            app:strokeColor="#10000000"
+            app:layout_constraintTop_toBottomOf="@id/postContent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/postImage"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/bg_search_outline"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:contentDescription="Imagem do post"/>
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/postImage"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toBottomOf="@id/imageContainer">
 
             <TextView
                 android:id="@+id/postLikeBtn"
@@ -102,10 +131,12 @@
                 android:layout_height="wrap_content"
                 android:text="🤍 0"
                 android:textSize="14sp"
+                android:textStyle="bold"
                 android:textColor="?android:attr/textColorSecondary"
                 android:padding="8dp"
                 android:background="?attr/selectableItemBackground"
-                android:layout_marginEnd="24dp"/>
+                android:gravity="center"
+                android:layout_marginEnd="16dp"/>
 
             <TextView
                 android:id="@+id/postCommentBtn"
@@ -113,10 +144,12 @@
                 android:layout_height="wrap_content"
                 android:text="💬 Comentar"
                 android:textSize="14sp"
+                android:textStyle="bold"
                 android:textColor="?android:attr/textColorSecondary"
                 android:padding="8dp"
+                android:gravity="center"
                 android:background="?attr/selectableItemBackground"/>
         </LinearLayout>
 
-    </RelativeLayout>
-</androidx.cardview.widget.CardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>
