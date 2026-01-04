@@ -61,8 +61,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void enviarNotificacaoLocal(String titulo, String mensagem, String postId) {
-        // MUDAR O ID DO CANAL força o Android a criar novas definições (resolve o problema do pop-up não aparecer)
-        String channelId = "universe_v2";
+        String channelId = "universe_v3";
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         // 1. Criar o Canal com IMPORTANCE_HIGH
@@ -98,7 +97,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentText(mensagem)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)   // Som e vibração padrão do sistema
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setVibrate(new long[]{100, 200, 300, 400, 500})
                 .setContentIntent(pendingIntent);
 

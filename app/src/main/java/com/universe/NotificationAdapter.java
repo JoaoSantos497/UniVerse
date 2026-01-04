@@ -55,7 +55,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             Glide.with(context).load(n.getFromUserPhoto()).circleCrop().into(holder.imgAvatar);
         } else {
             holder.imgAvatar.setImageResource(R.drawable.ic_person_filled);
-            holder.imgAvatar.setImageResource(R.drawable.ic_person_filled_white);
         }
 
         // Clique: Se for like/comment vai para os comentários do post
