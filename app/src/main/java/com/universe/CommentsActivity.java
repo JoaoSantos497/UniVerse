@@ -14,6 +14,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,7 +46,7 @@ public class CommentsActivity extends AppCompatActivity {
     private Button btnHeaderFollow;
     private RelativeLayout commentImagePreviewContainer;
     private ImageView commentImagePreview;
-    private RelativeLayout replyContainer;
+    private ConstraintLayout replyContainer;
     private TextView txtReplyingTo;
     private ImageButton btnCloseReply;
 
@@ -115,21 +116,32 @@ public class CommentsActivity extends AppCompatActivity {
     }
 
     private void ligarComponentes() {
+        // 1. Inputs e Texto
         inputComment = findViewById(R.id.inputComment);
+        txtReplyingTo = findViewById(R.id.txtReplyingTo);
+
+        // 2. Botões (ImageButtons)
+        btnCloseReply = findViewById(R.id.btnCloseReply);
         btnSend = findViewById(R.id.btnSendComment);
         btnBack = findViewById(R.id.btnBackComments);
         btnAttach = findViewById(R.id.btnAttach);
-        recyclerView = findViewById(R.id.recyclerComments);
+        btnRemoveImage = findViewById(R.id.btnRemoveCommentImage);
+
+        // 3. Header e Perfil
         headerProfileImage = findViewById(R.id.publicProfileImage);
         headerName = findViewById(R.id.publicProfileName);
         headerCourse = findViewById(R.id.publicProfileCourse);
         btnHeaderFollow = findViewById(R.id.btnFollowProfile);
+
+        // 4. Contentores
         commentImagePreviewContainer = findViewById(R.id.commentImagePreviewContainer);
-        commentImagePreview = findViewById(R.id.commentImagePreview);
-        btnRemoveImage = findViewById(R.id.btnRemoveCommentImage);
+
+        // No XML é um ConstraintLayout
         replyContainer = findViewById(R.id.replyContainer);
-        txtReplyingTo = findViewById(R.id.txtReplyingTo);
-        btnCloseReply = findViewById(R.id.btnCloseReply);
+
+        // 5. Imagem e Lista
+        commentImagePreview = findViewById(R.id.commentImagePreview);
+        recyclerView = findViewById(R.id.recyclerComments);
     }
 
     // --- MÉTODOS CHAMADOS PELO ADAPTER (DEVEM SER PUBLIC) ---
