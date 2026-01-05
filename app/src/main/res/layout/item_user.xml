@@ -25,7 +25,6 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:src="@drawable/ic_person_filled"
-            android:background="#E0E0E0"
             android:scaleType="centerCrop"
             android:padding="2dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.MaterialComponents.MediumComponent"

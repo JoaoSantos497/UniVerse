@@ -10,9 +10,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:name=".UniVerseApp"
@@ -25,6 +25,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UniVerse"
         tools:targetApi="31">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".MyFirebaseMessagingService"
@@ -39,7 +49,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -50,57 +59,22 @@
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             tools:replace="android:theme, android:exported" />
 
+        <activity android:name=".PostDetailsActivity" android:exported="false" />
+        <activity android:name=".BlockedUsersActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".RegisterActivity" android:exported="false" />
+        <activity android:name=".ForgotPasswordActivity" android:exported="false" />
+        <activity android:name=".CreatePostActivity" android:exported="false" />
+        <activity android:name=".CommentsActivity" android:exported="false" />
+        <activity android:name=".NotificationsActivity" android:exported="false" />
+        <activity android:name=".FullScreenImageActivity" android:exported="false" />
+        <activity android:name=".PublicProfileActivity" android:exported="false" />
+        <activity android:name=".UserListActivity" android:exported="false" />
+        <activity android:name=".EditProfileActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".SecurityActivity" android:exported="false" />
+        <activity android:name=".ChangePasswordActivity" android:exported="false" />
 
-
-
-
-
-        <activity
-            android:name=".PostDetailsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".BlockedUsersActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ForgotPasswordActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CreatePostActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CommentsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".NotificationsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".FullScreenImageActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PublicProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UserListActivity"
-            android:exported="false" />
-        <activity
-            android:name=".EditProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".SecurityActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ChangePasswordActivity"
-            android:exported="false" />
     </application>
 
 </manifest>
