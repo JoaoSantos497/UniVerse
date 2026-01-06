@@ -10,6 +10,7 @@ public class Post {
     private String date;
     private long timestamp;
     private List<String> likes;
+    private List<String> imagesUrls;
     private String imageUrl;
     private String universityDomain;
     private String postType;
@@ -62,6 +63,8 @@ public class Post {
     public String getPostType() { return postType; }
     public void setPostType(String postType) { this.postType = postType; }
 
+    public List<String> getImagesUrls() { return imagesUrls; }
+    public void setImagesUrls(List<String> imagesUrls) { this.imagesUrls = imagesUrls; }
     public List<String> getLikes() {
         if (likes == null) return new ArrayList<>();
         return likes;

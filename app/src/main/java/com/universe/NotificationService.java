@@ -21,9 +21,9 @@ import java.util.Objects;
 
 public class NotificationService {
 
-    private static String TARGET_USER_ID = "targetUserId";
-    private static String TIMESTAMP = "timestamp";
-    private static String READ = "read";
+    private static final String TARGET_USER_ID = "targetUserId";
+    private static final String TIMESTAMP = "timestamp";
+    private static final String READ = "read";
 
     private final UserService userService;
     private final FirebaseFirestore db;

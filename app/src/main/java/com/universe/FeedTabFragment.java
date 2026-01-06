@@ -79,13 +79,11 @@ public class FeedTabFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Certifica-te que o nome do layout XML corresponde ao que criámos com o Empty State
         View view = inflater.inflate(R.layout.activity_feed_tab_fragment, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerViewPosts);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
-        // NOVO: Inicializar o Empty View
         emptyView = view.findViewById(R.id.emptyView);
         btnRefreshEmpty = view.findViewById(R.id.btnRefreshEmpty);
 
@@ -117,7 +115,7 @@ public class FeedTabFragment extends Fragment {
         return view;
     }
 
-    // NOVO: Método para alternar entre Lista e Estado Vazio
+    // NOVO: Metodo para alternar entre Lista e Estado Vazio
     private void verificarListaVazia() {
         if (postList.isEmpty()) {
             recyclerView.setVisibility(View.GONE);

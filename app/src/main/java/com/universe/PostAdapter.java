@@ -17,12 +17,16 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
@@ -31,9 +35,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private String currentUserId;
     private FirebaseFirestore db;
     private Context context;
-
     private UserService userService;
-
     private NotificationService notificationService;
 
     public PostAdapter(List<Post> postList) {
@@ -65,6 +67,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
         Post post = postList.get(position);
 
+        // Preencher dados básicos
         holder.txtUserName.setText(post.getUserName());
         holder.txtContent.setText(post.getContent());
 
@@ -72,64 +75,87 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.txtDate.setText(android.text.format.DateUtils.getRelativeTimeSpanString(
                 post.getTimestamp(), now, android.text.format.DateUtils.MINUTE_IN_MILLIS));
 
-        // Imagem do Post
-        if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
-            holder.postImage.setVisibility(View.VISIBLE);
-            Glide.with(context).load(post.getImageUrl()).centerCrop().into(holder.postImage);
-        } else {
-            holder.postImage.setVisibility(View.GONE);
+        // --- LÓGICA DO SLIDE (CARROSSEL) ---
+        List<String> imagensParaMostrar = new ArrayList<>();
+
+        // 1. Prioridade à lista de imagens (Múltiplas)
+        if (post.getImagesUrls() != null && !post.getImagesUrls().isEmpty()) {
+            imagensParaMostrar.addAll(post.getImagesUrls());
+        }
+        // 2. Fallback para imagem única (Retrocompatibilidade)
+        else if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+            imagensParaMostrar.add(post.getImageUrl());
         }
 
-        // Foto de Perfil (Busca rápida)
+        if (!imagensParaMostrar.isEmpty()) {
+            holder.mediaContainer.setVisibility(View.VISIBLE);
+
+            // Configura o Adapter do Slide
+            ImageSliderAdapter sliderAdapter = new ImageSliderAdapter(imagensParaMostrar);
+            holder.viewPager.setAdapter(sliderAdapter);
+
+            // LIGAÇÃO DAS BOLINHAS (TABLAYOUT)
+            if (imagensParaMostrar.size() > 1) {
+                holder.tabLayout.setVisibility(View.VISIBLE);
+                // TabLayoutMediator liga o ViewPager às bolinhas automaticamente
+                new TabLayoutMediator(holder.tabLayout, holder.viewPager, (tab, pos) -> {
+                    // O design das bolinhas é tratado no XML (indicator_selector)
+                }).attach();
+            } else {
+                holder.tabLayout.setVisibility(View.GONE);
+            }
+        } else {
+            // Se não houver imagens, esconde a área de media
+            holder.mediaContainer.setVisibility(View.GONE);
+        }
+
+        // --- RESTO DA LÓGICA DO POST ---
+
+        // Carregar Foto de Perfil
         db.collection("users").document(post.getUserId()).get().addOnSuccessListener(doc -> {
             if (doc.exists() && context != null) {
                 String url = doc.getString("photoUrl");
-                Glide.with(context).load(url).circleCrop().placeholder(R.drawable.ic_person_filled).into(holder.imgProfile);
+                if (url != null) {
+                    Glide.with(context).load(url).circleCrop().placeholder(R.drawable.ic_person_filled).into(holder.imgProfile);
+                }
             }
         });
 
-        // Likes em Tempo Real
         configurarLikesTempoReal(holder, post);
-
-        // Comentários (Contagem e Clique)
         configurarComentarios(holder, post);
-
-        // Clique na foto de perfil
-        holder.imgProfile.setOnClickListener(v -> {
-            Intent intent = new Intent(context, PublicProfileActivity.class);
-            // ALTERADO: de "userId" para "targetUserId" para bater certo com a Activity
-            intent.putExtra("targetUserId", post.getUserId());
-            context.startActivity(intent);
-        });
-
-        // Clique no nome
-        holder.txtUserName.setOnClickListener(v -> {
-            Intent intent = new Intent(context, PublicProfileActivity.class);
-            // ALTERADO: de "userId" para "targetUserId"
-            intent.putExtra("targetUserId", post.getUserId());
-            context.startActivity(intent);
-        });
+        configurarCliquesProfile(holder, post);
 
         // Menu Opções
-        holder.btnMoreOptions.setOnClickListener(v -> {
-            int actualPos = holder.getBindingAdapterPosition();
-            if (actualPos == RecyclerView.NO_POSITION) return;
+        holder.btnMoreOptions.setOnClickListener(v -> mostrarMenuOpcoes(v, post));
+    }
 
-            PopupMenu popup = new PopupMenu(context, v);
-            if (post.getUserId().equals(currentUserId)) {
-                popup.getMenu().add(0, 1, 0, "Editar");
-                popup.getMenu().add(0, 2, 1, "Apagar");
-            } else {
-                popup.getMenu().add(0, 3, 0, "Denunciar");
-            }
+    // --- MÉTODOS AUXILIARES ---
 
-            popup.setOnMenuItemClickListener(item -> {
-                if (item.getItemId() == 1) abrirEditor(post);
-                else if (item.getItemId() == 2) confirmarExclusao(post.getPostId(), actualPos);
-                return true;
-            });
-            popup.show();
+    private void mostrarMenuOpcoes(View v, Post post) {
+        PopupMenu popup = new PopupMenu(context, v);
+        if (post.getUserId().equals(currentUserId)) {
+            popup.getMenu().add(0, 1, 0, "Editar");
+            popup.getMenu().add(0, 2, 1, "Apagar");
+        } else {
+            popup.getMenu().add(0, 3, 0, "Denunciar");
+        }
+
+        popup.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) abrirEditor(post);
+            else if (item.getItemId() == 2) confirmarExclusao(post.getPostId());
+            return true;
         });
+        popup.show();
+    }
+
+    private void configurarCliquesProfile(PostViewHolder holder, Post post) {
+        View.OnClickListener listener = v -> {
+            Intent intent = new Intent(context, PublicProfileActivity.class);
+            intent.putExtra("targetUserId", post.getUserId());
+            context.startActivity(intent);
+        };
+        holder.imgProfile.setOnClickListener(listener);
+        holder.txtUserName.setOnClickListener(listener);
     }
 
     private void configurarLikesTempoReal(PostViewHolder holder, Post post) {
@@ -137,8 +163,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 .addSnapshotListener((snapshot, e) -> {
                     if (snapshot != null && snapshot.exists()) {
                         List<String> likes = (List<String>) snapshot.get("likes");
-                        post.setLikes(likes); // Atualiza o objeto local
-
+                        post.setLikes(likes);
                         boolean isLiked = likes != null && likes.contains(currentUserId);
                         int count = (likes != null) ? likes.size() : 0;
 
@@ -148,10 +173,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 });
 
         holder.txtLike.setOnClickListener(v -> {
-            // Referência direta ao documento para evitar ler dados locais obsoletos
             com.google.firebase.firestore.DocumentReference postRef = db.collection("posts").document(post.getPostId());
-
-            // Verificamos o estado atual do objeto (preenchido pelo SnapshotListener acima)
             boolean jaDeuLike = post.getLikes() != null && post.getLikes().contains(currentUserId);
 
             if (jaDeuLike) {
@@ -159,25 +181,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             } else {
                 postRef.update("likes", FieldValue.arrayUnion(currentUserId));
                 notificationService.sendNotification(post.getUserId(), LIKE);
-
-
             }
         });
-    }
-
-    private void confirmarExclusao(String postId, int position) {
-        new AlertDialog.Builder(context)
-                .setTitle("Apagar Post")
-                .setMessage("Tens a certeza?")
-                .setPositiveButton("Sim", (d, w) -> {
-                    // APENAS apaga no DB.
-                    // O FeedTabFragment vai detetar o REMOVED e fará o notifyItemRemoved sozinho!
-                    db.collection("posts").document(postId).delete()
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(context, "Erro ao apagar", Toast.LENGTH_SHORT).show();
-                            });
-                })
-                .setNegativeButton("Não", null).show();
     }
 
     private void configurarComentarios(PostViewHolder holder, Post post) {
@@ -194,11 +199,20 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         });
     }
 
+    private void confirmarExclusao(String postId) {
+        new AlertDialog.Builder(context)
+                .setTitle("Apagar Post")
+                .setMessage("Tens a certeza?")
+                .setPositiveButton("Sim", (d, w) -> {
+                    db.collection("posts").document(postId).delete()
+                            .addOnFailureListener(e -> Toast.makeText(context, "Post apagado", Toast.LENGTH_SHORT).show());
+                })
+                .setNegativeButton("Não", null).show();
+    }
+
     private void abrirEditor(Post post) {
         Intent i = new Intent(context, CreatePostActivity.class);
-        // 1. Enviamos o ID (essencial para não duplicar)
         i.putExtra("editPostId", post.getPostId());
-        // 2. Enviamos o conteúdo atual para preencher o EditText
         i.putExtra("currentContent", post.getContent());
         context.startActivity(i);
     }
@@ -206,10 +220,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     @Override
     public int getItemCount() { return postList.size(); }
 
+    // --- VIEW HOLDER PRINCIPAL ---
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         TextView txtUserName, txtContent, txtDate, txtLike, txtComment;
-        ImageView imgProfile, postImage;
+        ImageView imgProfile;
         ImageButton btnMoreOptions;
+
+        // Elementos do Slider
+        View mediaContainer;
+        ViewPager2 viewPager;
+        TabLayout tabLayout;
 
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -219,8 +239,56 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             txtLike = itemView.findViewById(R.id.postLikeBtn);
             txtComment = itemView.findViewById(R.id.postCommentBtn);
             imgProfile = itemView.findViewById(R.id.postProfileImage);
-            postImage = itemView.findViewById(R.id.postImage);
             btnMoreOptions = itemView.findViewById(R.id.btnMoreOptions);
+
+            // Bind dos novos elementos do slide
+            mediaContainer = itemView.findViewById(R.id.mediaContainer);
+            viewPager = itemView.findViewById(R.id.viewPagerImages);
+            tabLayout = itemView.findViewById(R.id.indicator);
+        }
+    }
+
+    // --- ADAPTER INTERNO PARA O SLIDER DE IMAGENS ---
+    private static class ImageSliderAdapter extends RecyclerView.Adapter<ImageSliderAdapter.SliderViewHolder> {
+        private List<String> imageUrls;
+
+        public ImageSliderAdapter(List<String> imageUrls) {
+            this.imageUrls = imageUrls;
+        }
+
+        @NonNull
+        @Override
+        public SliderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            // Usa o layout item_post_image.xml
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_post_image, parent, false);
+            return new SliderViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull SliderViewHolder holder, int position) {
+            String url = imageUrls.get(position);
+            Glide.with(holder.itemView.getContext())
+                    .load(url)
+                    .centerCrop()
+                    .into(holder.imageView);
+
+            // Clique para abrir em ecrã inteiro
+            holder.imageView.setOnClickListener(v -> {
+                Intent intent = new Intent(holder.itemView.getContext(), FullScreenImageActivity.class);
+                intent.putExtra("imageUrl", url);
+                holder.itemView.getContext().startActivity(intent);
+            });
+        }
+
+        @Override
+        public int getItemCount() { return imageUrls.size(); }
+
+        static class SliderViewHolder extends RecyclerView.ViewHolder {
+            ImageView imageView;
+            public SliderViewHolder(@NonNull View itemView) {
+                super(itemView);
+                imageView = itemView.findViewById(R.id.sliderImage);
+            }
         }
     }
 }

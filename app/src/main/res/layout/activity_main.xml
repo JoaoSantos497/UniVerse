@@ -30,10 +30,10 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
 
-        app:itemIconTint="@color/nav_item_selector"
-        app:itemTextColor="@color/nav_item_selector"
+        app:itemIconTint="@color/nav_item_colors"
+        app:itemTextColor="@color/nav_item_colors"
 
-        app:itemRippleColor="#206200EE"
+        app:itemRippleColor="@color/nav_item_selector"
         app:itemIconSize="26dp"
         app:labelVisibilityMode="labeled"
         app:elevation="16dp" />

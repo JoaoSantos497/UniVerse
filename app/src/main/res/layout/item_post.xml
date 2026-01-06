@@ -115,10 +115,16 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent">
 
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/viewPagerImages"
+                <com.universe.NestedScrollableHost
                     android:layout_width="match_parent"
-                    android:layout_height="300dp" />
+                    android:layout_height="wrap_content">
+
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/viewPagerImages"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp" />
+
+                </com.universe.NestedScrollableHost>
 
                 <com.google.android.material.tabs.TabLayout
                     android:id="@+id/indicator"
