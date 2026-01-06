@@ -55,7 +55,5 @@ dependencies {
     annotationProcessor libs.compiler
     implementation libs.firebase.messaging
     implementation libs.firebase.firestore.v2511
-
-
-
+    implementation libs.activity.v180
 }
