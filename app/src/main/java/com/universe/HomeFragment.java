@@ -96,7 +96,7 @@ public class HomeFragment extends Fragment {
     private void startUnreadListener() {
         if (mAuth.getCurrentUser() == null) return;
 
-        // Remove listener anterior para evitar duplicados
+        // Remove listener anterior
         if (badgeListener != null) {
             badgeListener.remove();
         }
@@ -117,7 +117,6 @@ public class HomeFragment extends Fragment {
 
                     @Override
                     public void onError(Exception e) {
-                        // Opcional: Logar erro
                     }
                 }
         );
@@ -126,14 +125,12 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Garante que a badge atualiza ao voltar para a home (ex: depois de ler notificações)
         startUnreadListener();
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Remove o listener para poupar bateria e dados quando o fragmento é destruído
         if (badgeListener != null) {
             badgeListener.remove();
             badgeListener = null;
