@@ -1,5 +1,5 @@
 [versions]
-activityVersion = "1.8.0"
+activityVersion = "1.12.2"
 agp = "8.13.2"
 androidImageCropper = "4.7.0"
 firebaseBom = "34.7.0"
