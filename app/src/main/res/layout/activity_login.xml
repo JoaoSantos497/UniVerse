@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:alpha="0.9"
-            android:text="Bem-vindo de volta!"
+            android:text="Bem-vindo!"
             android:textColor="?attr/colorOnPrimary"
             android:textSize="18sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -75,6 +75,7 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
                     app:startIconDrawable="@android:drawable/ic_dialog_email">
+
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:layout_width="match_parent"
