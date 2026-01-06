@@ -39,7 +39,6 @@ public class HomeFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Certifica-te que o nome do XML é 'fragment_home.xml'
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         // 1. Inicializar Firebase e Serviços
@@ -48,22 +47,16 @@ public class HomeFragment extends Fragment {
         userService = new UserService();
         notificationService = new NotificationService(userService);
 
-        // 2. Inicializar componentes (IDs correspondem ao novo XML)
+        // 2. Inicializar componentes
         fabCreatePost = view.findViewById(R.id.fabCreatePost);
         btnNotifications = view.findViewById(R.id.btnNotifications);
         tabLayout = view.findViewById(R.id.tabLayoutFeed);
         viewPager = view.findViewById(R.id.viewPagerFeed);
-
-        // O badge agora é um MaterialCardView no XML, mas podemos tratá-lo como View genérica
-        // pois só queremos mudar a visibilidade (VISIBLE/GONE)
         notificationBadge = view.findViewById(R.id.notificationBadge);
 
         // 3. Configurar o ViewPager2
-        // 'this' passa o Fragment atual como gestor do ciclo de vida
         pagerAdapter = new FeedPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
-
-        // Mantém 1 página em memória de cada lado para melhorar a performance do scroll
         viewPager.setOffscreenPageLimit(1);
 
         // 4. Configurar TabLayout com o ViewPager
