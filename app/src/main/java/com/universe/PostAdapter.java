@@ -109,8 +109,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.mediaContainer.setVisibility(View.GONE);
         }
 
-        // --- RESTO DA LÓGICA DO POST ---
-
         // Carregar Foto de Perfil
         db.collection("users").document(post.getUserId()).get().addOnSuccessListener(doc -> {
             if (doc.exists() && context != null) {
@@ -225,8 +223,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         TextView txtUserName, txtContent, txtDate, txtLike, txtComment;
         ImageView imgProfile;
         ImageButton btnMoreOptions;
-
-        // Elementos do Slider
         View mediaContainer;
         ViewPager2 viewPager;
         TabLayout tabLayout;

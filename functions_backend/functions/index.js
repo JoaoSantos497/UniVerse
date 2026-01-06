@@ -50,23 +50,22 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
             return null;
         }
 
-        // Constrói o payload da mensagem push
+
         const payload = {
             token: fcmToken,
             notification: {
                 title: fromUserName,
                 body: messageText
             },
-            // 'data' é onde colocamos os dados que a app Android irá usar
             data: {
                 type: type,
-                fromUserId: fromUserId, // ESSENCIAL para abrir o perfil de quem segue
-                postId: postId          // ESSENCIAL para abrir o post de um like/comentário
+                fromUserId: fromUserId,
+                postId: postId
             },
             android: {
                 priority: "high",
                 notification: {
-                    channelId: "universe_v3", // O ID do seu canal de notificação no Android
+                    channelId: "universe_v3", /
                     priority: "high"
                 }
             }
