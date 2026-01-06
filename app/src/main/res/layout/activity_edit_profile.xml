@@ -67,7 +67,6 @@
                         android:layout_width="110dp"
                         android:layout_height="110dp"
                         android:src="@drawable/ic_person_filled"
-                        android:background="#E0E0E0"
                         android:scaleType="centerCrop"
                         android:padding="2dp"
                         app:strokeWidth="2dp"
