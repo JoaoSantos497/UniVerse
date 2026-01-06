@@ -212,6 +212,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         Intent i = new Intent(context, CreatePostActivity.class);
         i.putExtra("editPostId", post.getPostId());
         i.putExtra("currentContent", post.getContent());
+
+        if (post.getImagesUrls() != null && !post.getImagesUrls().isEmpty()) {
+            i.putStringArrayListExtra("currentImages", new ArrayList<>(post.getImagesUrls()));
+        } else if (post.getImageUrl() != null) {
+            // Fallback para posts antigos com imagem única
+            ArrayList<String> singleImage = new ArrayList<>();
+            singleImage.add(post.getImageUrl());
+            i.putStringArrayListExtra("currentImages", singleImage);
+        }
+
         context.startActivity(i);
     }
 
