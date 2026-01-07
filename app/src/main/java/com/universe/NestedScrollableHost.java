@@ -5,6 +5,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -35,11 +36,16 @@ public class NestedScrollableHost extends FrameLayout {
     }
 
     private ViewPager2 getParentViewPager() {
-        View v = (View) getParent();
-        while (v != null && !(v instanceof ViewPager2)) {
-            v = (View) v.getParent();
+        ViewParent parent = getParent();
+
+        while (parent != null) {
+            if (parent instanceof ViewPager2) {
+                return (ViewPager2) parent;
+            }
+            parent = parent.getParent();
         }
-        return (ViewPager2) v;
+
+        return null;
     }
 
     private View getChildViewPager() {

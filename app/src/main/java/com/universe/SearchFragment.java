@@ -175,20 +175,25 @@ public class SearchFragment extends Fragment {
     }
 
     private void mostrarEstado(boolean isLoading, boolean isEmpty) {
-        if (progressBar != null) progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (progressBar != null) {
+            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        }
+
         if (isLoading) {
-            if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.GONE);
             recyclerView.setVisibility(View.GONE);
+            emptyViewSearch.setVisibility(View.GONE);
+            return;
+        }
+
+        if (isEmpty) {
+            recyclerView.setVisibility(View.GONE);
+            emptyViewSearch.setVisibility(View.VISIBLE);
         } else {
-            if (isEmpty) {
-                if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.GONE);
-            } else {
-                if (emptyViewSearch != null) emptyViewSearch.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.VISIBLE);
-            }
+            recyclerView.setVisibility(View.VISIBLE);
+            emptyViewSearch.setVisibility(View.GONE);
         }
     }
+
 
     private void verificarSeVazio() {
         mostrarEstado(false, userList.isEmpty());
