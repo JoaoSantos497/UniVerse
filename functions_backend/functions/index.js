@@ -1,10 +1,10 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
-const { onUserDeleted } = require("firebase-functions/v2/identity");
+const { auth } = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 
 if (admin.apps.length === 0) {
-  admin.initializeApp();
+    admin.initializeApp();
 }
 
 // --- FUNÇÃO 1: ENVIO DE NOTIFICAÇÕES ---
@@ -19,7 +19,7 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
     const {
         targetUserId,
         fromUserId,
-        message: "",
+        message = "",
         type = "general",
         postId = "",
         fromUserName = "UniVerse"
