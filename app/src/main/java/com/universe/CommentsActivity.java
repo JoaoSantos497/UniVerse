@@ -14,13 +14,13 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -60,10 +60,12 @@ public class CommentsActivity extends AppCompatActivity {
     private String postAuthorId;
     private Uri selectedImageUri = null;
     private ActivityResultLauncher<String> mGetContent;
+
+    // Variáveis de controlo de edição
     private String idComentarioEdicao = null;
+    private boolean imagemRemovidaNaEdicao = false; // Nova variável
 
     private NotificationService notificationService;
-
     private UserService userService;
 
     @Override
@@ -86,6 +88,8 @@ public class CommentsActivity extends AppCompatActivity {
         notificationService = new NotificationService(userService);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         commentList = new ArrayList<>();
+
+        // Callback do adapter para ativar modo resposta
         adapter = new CommentsAdapter(commentList, username -> ativarModoResposta(username));
         recyclerView.setAdapter(adapter);
 
@@ -116,48 +120,51 @@ public class CommentsActivity extends AppCompatActivity {
     }
 
     private void ligarComponentes() {
-        // 1. Inputs e Texto
         inputComment = findViewById(R.id.inputComment);
         txtReplyingTo = findViewById(R.id.txtReplyingTo);
-
-        // 2. Botões (ImageButtons)
         btnCloseReply = findViewById(R.id.btnCloseReply);
         btnSend = findViewById(R.id.btnSendComment);
         btnBack = findViewById(R.id.btnBackComments);
         btnAttach = findViewById(R.id.btnAttach);
         btnRemoveImage = findViewById(R.id.btnRemoveCommentImage);
-
-        // 3. Header e Perfil
         headerProfileImage = findViewById(R.id.publicProfileImage);
         headerName = findViewById(R.id.publicProfileName);
         headerCourse = findViewById(R.id.publicProfileCourse);
         btnHeaderFollow = findViewById(R.id.btnFollowProfile);
-
-        // 4. Contentores
         commentImagePreviewContainer = findViewById(R.id.commentImagePreviewContainer);
-
-        // No XML é um ConstraintLayout
         replyContainer = findViewById(R.id.replyContainer);
-
-        // 5. Imagem e Lista
         commentImagePreview = findViewById(R.id.commentImagePreview);
         recyclerView = findViewById(R.id.recyclerComments);
     }
 
-    // --- MÉTODOS CHAMADOS PELO ADAPTER (DEVEM SER PUBLIC) ---
+    // --- MÉTODOS CHAMADOS PELO ADAPTER (PUBLIC) ---
 
     public void prepararEdicaoComentario(Comment comment) {
         idComentarioEdicao = comment.getCommentId();
+        imagemRemovidaNaEdicao = false; // Reset da flag
+
         replyContainer.setVisibility(View.VISIBLE);
         txtReplyingTo.setText("A editar o teu comentário...");
         inputComment.setText(comment.getContent());
         inputComment.requestFocus();
 
+        // --- CARREGAR IMAGEM EXISTENTE (SE HOUVER) ---
+        if (comment.getCommentImageUrl() != null && !comment.getCommentImageUrl().isEmpty()) {
+            commentImagePreviewContainer.setVisibility(View.VISIBLE);
+            Glide.with(this).load(comment.getCommentImageUrl()).into(commentImagePreview);
+        } else {
+            commentImagePreviewContainer.setVisibility(View.GONE);
+        }
+
+        // Esconde o botão de anexar durante a edição para simplificar (evita conflito de nova imagem vs velha)
+        btnAttach.setVisibility(View.GONE);
+
+        // Teclado
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) imm.showSoftInput(inputComment, InputMethodManager.SHOW_IMPLICIT);
 
+        // Muda ícone para "Guardar"
         btnSend.setImageResource(android.R.drawable.ic_menu_save);
-        btnAttach.setVisibility(View.GONE);
     }
 
     public void apagarComentario(String commentId, int position) {
@@ -243,23 +250,35 @@ public class CommentsActivity extends AppCompatActivity {
 
     private void cancelarEdicaoOuResposta() {
         idComentarioEdicao = null;
+        imagemRemovidaNaEdicao = false; // Reset da flag
+
         replyContainer.setVisibility(View.GONE);
         inputComment.setText("");
-        btnSend.setImageResource(R.drawable.ic_send);
+
+        // Restaura ícone de enviar (Verifica se tens o drawable ic_send, senão usa android.R.drawable.ic_menu_send)
+        btnSend.setImageResource(android.R.drawable.ic_menu_send);
         btnSend.setEnabled(true);
-        btnAttach.setVisibility(View.VISIBLE);
+        btnAttach.setVisibility(View.VISIBLE); // Mostra o clipe novamente
+
         limparImagemSelecionada();
     }
 
     private void limparImagemSelecionada() {
         selectedImageUri = null;
         commentImagePreview.setImageURI(null);
+        commentImagePreview.setImageDrawable(null); // Limpa Glide
         commentImagePreviewContainer.setVisibility(View.GONE);
+
+        // Se estamos a editar e o user clicou no X, marcamos para remover da BD
+        if (idComentarioEdicao != null) {
+            imagemRemovidaNaEdicao = true;
+        }
     }
 
     private void prepararEnvio() {
         String texto = inputComment.getText().toString().trim();
-        if (TextUtils.isEmpty(texto) && selectedImageUri == null) return;
+        // Permite enviar se tiver texto OU imagem (em modo novo) ou se estiver a editar apenas removendo a imagem
+        if (TextUtils.isEmpty(texto) && selectedImageUri == null && idComentarioEdicao == null) return;
 
         btnSend.setEnabled(false);
 
@@ -295,15 +314,28 @@ public class CommentsActivity extends AppCompatActivity {
         String uid = mAuth.getCurrentUser().getUid();
 
         if (idComentarioEdicao != null) {
+            // --- MODO EDIÇÃO ---
+            java.util.Map<String, Object> updates = new java.util.HashMap<>();
+            updates.put("content", texto);
+
+            // Se o utilizador removeu a imagem durante a edição
+            if (imagemRemovidaNaEdicao) {
+                updates.put("commentImageUrl", null);
+            }
+
             db.collection("posts").document(postId)
                     .collection("comments").document(idComentarioEdicao)
-                    .update("content", texto)
+                    .update(updates)
                     .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Atualizado!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Comentário atualizado!", Toast.LENGTH_SHORT).show();
                         cancelarEdicaoOuResposta();
                     })
-                    .addOnFailureListener(e -> btnSend.setEnabled(true));
+                    .addOnFailureListener(e -> {
+                        btnSend.setEnabled(true);
+                        Toast.makeText(this, "Erro ao atualizar.", Toast.LENGTH_SHORT).show();
+                    });
         } else {
+            // --- MODO NOVO COMENTÁRIO ---
             db.collection("users").document(uid).get().addOnSuccessListener(doc -> {
                 User user = doc.toObject(User.class);
                 if (user != null) {
