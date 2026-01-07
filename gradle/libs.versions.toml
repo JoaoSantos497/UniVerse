@@ -17,6 +17,7 @@ activity = "1.12.2"
 constraintlayout = "2.2.1"
 swiperefreshlayout = "1.2.0"
 playServicesMlkitTextRecognitionCommon = "19.1.0"
+cameraCamera2Pipe = "1.6.0-alpha02"
 
 
 [libraries]
@@ -42,6 +43,7 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 play-services-mlkit-text-recognition-common = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-common", version.ref = "playServicesMlkitTextRecognitionCommon" }
+camera-camera2-pipe = { group = "androidx.camera", name = "camera-camera2-pipe", version.ref = "cameraCamera2Pipe" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
