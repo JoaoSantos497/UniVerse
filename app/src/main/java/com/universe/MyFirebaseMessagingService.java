@@ -38,15 +38,20 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         String titulo = "UniVerse";
         String corpo = "";
-        String postId = "";
+        String postId = null;
+        NotificationType notificationType = null;
+        String fromUserId = null;
 
         // 1. Prioridade para dados do objeto "data" (enviados pela Cloud Function)
         Map<String, String> data = remoteMessage.getData();
-        if (data.size() > 0) {
-            postId = data.get("postId");
+        if (!data.isEmpty()) {
+            postId = data.getOrDefault("postId", null);
             // Se a Cloud Function enviar título/corpo dentro do data:
             if (data.containsKey("title")) titulo = data.get("title");
             if (data.containsKey("body")) corpo = data.get("body");
+            if (data.containsKey("type")) notificationType = NotificationType.valueOf(data.get("type"));
+            if (data.containsKey("fromUserId")) corpo = data.get("fromUserId");
+
         }
 
         // 2. Se não houver no data, tenta o objeto de Notificação padrão
@@ -56,11 +61,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         if (corpo != null && !corpo.isEmpty()) {
-            enviarNotificacaoLocal(titulo, corpo, postId);
+            enviarNotificacaoLocal(titulo, corpo, postId, fromUserId, notificationType);
         }
     }
 
-    private void enviarNotificacaoLocal(String titulo, String mensagem, String postId) {
+    private void enviarNotificacaoLocal(String titulo, String mensagem, String postId, String fromUserId, NotificationType notificationType) {
         String channelId = "universe_v3";
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -82,8 +87,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         // 2. Configurar a Intent para abrir a CommentsActivity
-        Intent intent = new Intent(this, CommentsActivity.class);
-        if (postId != null) intent.putExtra("postId", postId);
+        Intent intent = null;
+        switch (notificationType) {
+            case FOLLOW:
+                intent = new Intent(this, PublicProfileActivity.class);
+                intent.putExtra("targetUserId", fromUserId);
+                break;
+            case LIKE:
+            case COMMENT:
+            case POST:
+                intent = new Intent(this, CommentsActivity.class);
+                intent.putExtra("postId", postId);
+                break;
+        }
+        if (postId == null) return;
+
 
         // FLAG_UPDATE_CURRENT é vital para que o postId seja atualizado se receberes 2 notificações
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

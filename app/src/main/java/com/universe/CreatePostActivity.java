@@ -338,7 +338,7 @@ public class CreatePostActivity extends AppCompatActivity {
                         db.collection("users").document(uid).collection("followers").get()
                                 .addOnSuccessListener(querySnapshot -> {
                                     for (com.google.firebase.firestore.DocumentSnapshot document : querySnapshot.getDocuments()) {
-                                        notificationService.sendNotification(document.getId(), POST);
+                                        notificationService.sendNotification(document.getId(), POST, post.getPostId());
                                     }
                                 });
                         finish();

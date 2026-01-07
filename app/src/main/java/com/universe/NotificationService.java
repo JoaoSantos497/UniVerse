@@ -115,13 +115,6 @@ public class NotificationService {
 
     public Task<Notification> sendNotification(
             String targetUserId,
-            NotificationType type
-    ) {
-        return sendNotificationInternal(targetUserId, type, null);
-    }
-
-    public Task<Notification> sendNotification(
-            String targetUserId,
             NotificationType type,
             String postId
     ) {

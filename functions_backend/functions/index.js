@@ -1,10 +1,10 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onRequest } = require("firebase-functions/v2/https");
-const { auth } = require("firebase-functions/v1");
+const { onUserDeleted } = require("firebase-functions/v2/identity");
 const admin = require("firebase-admin");
 
 if (admin.apps.length === 0) {
-    admin.initializeApp();
+  admin.initializeApp();
 }
 
 // --- FUNÇÃO 1: ENVIO DE NOTIFICAÇÕES ---
@@ -19,10 +19,10 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
     const {
         targetUserId,
         fromUserId,
-        message: messageText,
-        type = "general", // Valor padrão para segurança
-        postId = "",     // Valor padrão para segurança
-        fromUserName = "UniVerse" // Título padrão
+        message: "",
+        type = "general",
+        postId = "",
+        fromUserName = "UniVerse"
     } = notificationData;
 
     if (!targetUserId || !fromUserId) {
@@ -55,7 +55,7 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
             token: fcmToken,
             notification: {
                 title: fromUserName,
-                body: messageText
+                body: message
             },
             data: {
                 type: type,
@@ -65,7 +65,7 @@ exports.sendNotification = onDocumentCreated("notifications/{notificationId}", a
             android: {
                 priority: "high",
                 notification: {
-                    channelId: "universe_v3", /
+                    channelId: "universe_v3",
                     priority: "high"
                 }
             }

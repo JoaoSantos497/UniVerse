@@ -178,7 +178,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 postRef.update("likes", FieldValue.arrayRemove(currentUserId));
             } else {
                 postRef.update("likes", FieldValue.arrayUnion(currentUserId));
-                notificationService.sendNotification(post.getUserId(), LIKE);
+                notificationService.sendNotification(post.getUserId(), LIKE, post.getPostId());
             }
         });
     }
