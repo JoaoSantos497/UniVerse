@@ -63,7 +63,7 @@ public class CommentsActivity extends AppCompatActivity {
 
     // Variáveis de controlo de edição
     private String idComentarioEdicao = null;
-    private boolean imagemRemovidaNaEdicao = false; // Nova variável
+    private boolean imagemRemovidaNaEdicao = false;
 
     private NotificationService notificationService;
     private UserService userService;
@@ -258,7 +258,7 @@ public class CommentsActivity extends AppCompatActivity {
         // Restaura ícone de enviar (Verifica se tens o drawable ic_send, senão usa android.R.drawable.ic_menu_send)
         btnSend.setImageResource(android.R.drawable.ic_menu_send);
         btnSend.setEnabled(true);
-        btnAttach.setVisibility(View.VISIBLE); // Mostra o clipe novamente
+        btnAttach.setVisibility(View.VISIBLE);
 
         limparImagemSelecionada();
     }
@@ -266,7 +266,7 @@ public class CommentsActivity extends AppCompatActivity {
     private void limparImagemSelecionada() {
         selectedImageUri = null;
         commentImagePreview.setImageURI(null);
-        commentImagePreview.setImageDrawable(null); // Limpa Glide
+        commentImagePreview.setImageDrawable(null);
         commentImagePreviewContainer.setVisibility(View.GONE);
 
         // Se estamos a editar e o user clicou no X, marcamos para remover da BD

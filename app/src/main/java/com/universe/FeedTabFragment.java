@@ -100,7 +100,7 @@ public class FeedTabFragment extends Fragment {
             iniciarEscutaRealtime();
         });
 
-        // NOVO: Botão de atualizar dentro do ecrã vazio
+        // Botão de atualizar dentro do ecrã vazio
         if (btnRefreshEmpty != null) {
             btnRefreshEmpty.setOnClickListener(v -> {
                 swipeRefreshLayout.setRefreshing(true);
@@ -115,7 +115,7 @@ public class FeedTabFragment extends Fragment {
         return view;
     }
 
-    // NOVO: Metodo para alternar entre Lista e Estado Vazio
+    // Metodo para alternar entre Lista e Estado Vazio
     private void verificarListaVazia() {
         if (postList.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
@@ -181,7 +181,7 @@ public class FeedTabFragment extends Fragment {
                         }
                     }
                     postAdapter.notifyDataSetChanged();
-                    // NOVO: Verificar se ficou vazio após carga inicial
+                    //Verificar se ficou vazio após carga inicial
                     verificarListaVazia();
                 } else {
                     // Atualizações em tempo real
@@ -223,7 +223,7 @@ public class FeedTabFragment extends Fragment {
                                 break;
                         }
                     }
-                    // NOVO: Verificar estado vazio após qualquer alteração (Add/Remove)
+                    // Verificar estado vazio após qualquer alteração (Add/Remove)
                     verificarListaVazia();
                 }
             } else {
